@@ -1,0 +1,28 @@
+{
+  "name": "appcraft",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Agent-oriented framework for complex applications. Extends the Toolcraft methodology; built on Astryx and StyleX.",
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "check:boundaries": "depcruise src --config .dependency-cruiser.cjs",
+    "check:docs": "node scripts/check-contract-docs.mjs",
+    "check:preflight": "node scripts/check-preflight.mjs",
+    "test:unit": "vitest run",
+    "verify:quick": "npm run typecheck && npm run lint && npm run check:boundaries && npm run test:unit",
+    "verify:final": "npm run check:docs && npm run check:preflight && npm run verify:quick",
+    "test": "npm run verify:final"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "dependency-cruiser": "^16.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-boundaries": "^5.0.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.0.0"
+  }
+}
