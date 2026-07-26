@@ -47,6 +47,14 @@ module.exports = {
       to: { path: "^src/appcraft/(surfaces|controls)" },
     },
     {
+      name: "e2e-uses-public-api-only",
+      comment:
+        "facade-owns-state: browser tests observe behaviour through the declared DOM contract and the public entry, never through framework internals. A test that reaches inside cannot prove an invariant a user could see.",
+      severity: "error",
+      from: { path: "^e2e/" },
+      to: { path: "^src/appcraft/(kernel|store|schema|surfaces|controls)/" },
+    },
+    {
       name: "no-orphans",
       severity: "warn",
       from: { orphan: true, pathNot: "\\.d\\.ts$" },

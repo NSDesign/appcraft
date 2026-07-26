@@ -16,8 +16,12 @@ const ROUTE_PATHS = {
   store: /^src\/appcraft\/store\//,
   surfaces: /^src\/appcraft\/surfaces\//,
   controls: /^src\/appcraft\/controls\//,
-  enforcement: /^(scripts\/|\.dependency-cruiser|eslint|package\.json|tsconfig)/,
-  docs: /^(docs\/|AGENTS\.md)/,
+  // Verification surfaces are enforcement: a change to e2e, to the skills, or to a
+  // build config changes what the gate proves, which is the blast radius that
+  // matters.
+  enforcement:
+    /^(scripts\/|e2e\/|\.agents\/|skills-lock\.json|\.dependency-cruiser|eslint|vitest|playwright|package\.json|tsconfig)/,
+  docs: /^(docs\/|AGENTS\.md|README\.md)/,
 };
 
 let worklog;
@@ -62,10 +66,13 @@ const declared = (lastBlock.match(/^\s+routes:\s*\[(.*?)\]/m)?.[1] ?? "")
 
 let changed = [];
 try {
-  changed = execSync("git diff --name-only HEAD", { encoding: "utf8" })
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  // Tracked modifications plus new files. `git diff` alone misses untracked paths,
+  // which would let a pass that only adds files declare no routes at all — the
+  // easiest way to slip past the gate, and the most likely shape for a new surface.
+  const tracked = execSync("git diff --name-only HEAD", { encoding: "utf8" });
+  const untracked = execSync("git ls-files --others --exclude-standard", { encoding: "utf8" });
+
+  changed = [...new Set(`${tracked}\n${untracked}`.split("\n").map((s) => s.trim()).filter(Boolean))];
 } catch {
   console.log("check:preflight — no git history to compare; attestation shape OK.");
   process.exit(0);

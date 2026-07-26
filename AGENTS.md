@@ -113,13 +113,29 @@ src/appcraft/store/      Jotai facade, undo grouping, persistence
 src/appcraft/surfaces/   layout archetypes
 src/appcraft/controls/   Astryx binding layer
 src/app/                 demo/fixture app surface
+e2e/                     Playwright suite, acceptance matrix, DOM contract
+.agents/skills/          workflow skills, content-locked by skills-lock.json
 docs/design/             authoritative design documents
 docs/                    contract, decision contract, verification, worklog
 scripts/                 checkers
 ```
 
 Boundary rules are enforced by `dependency-cruiser` and `eslint-plugin-boundaries`;
-see `.dependency-cruiser.cjs`.
+see `.dependency-cruiser.cjs` and `eslint.config.js`. `e2e` observes behaviour through
+the DOM contract in `e2e/appcraft-fixture.ts` and is forbidden from importing
+framework internals.
+
+## Skills
+
+`.agents/skills` carries the workflow skills. `npm run check:skills` verifies each is
+present and matches its hash in `skills-lock.json`; re-lock deliberately with
+`npm run skills:lock` and say so in the worklog. A missing skill is recorded in the
+attestation's `skip` list — never silently skipped, and never a reason to lower a
+verification tier.
+
+Load `projection-modeling` before any change to a discriminant, a branch, or a field
+inside a branch. It is the Δ1 skill, and Δ1 is where mistakes are silent rather than
+loud.
 
 ## Verification tiers
 
@@ -134,6 +150,16 @@ uncertain, move one tier higher — not automatically to the full gate.
 | 3 | Kernel, retention, eviction, projection graph | `verify:quick` + retention and eviction suites |
 | 4 | Public API, architecture, dependencies, release | Full gate: `npm run verify:final` |
 
+Retention, eviction, export scope, validation scope, and panel-discriminant
+persistence are **session-observable**: a unit test proves the kernel semantics, and
+only `npm run test:browser` proves the surface bound to a branch behaves that way. The
+acceptance matrix in `e2e/appcraft-acceptance.ts` records which layer discharges which
+invariant, and `docs/verification.md` explains what each layer can and cannot prove.
+
+The browser suite skips its fixture-dependent specs until `src/app` renders a surface
+graph. A skipped suite is reported as skipped and belongs in the attestation's `skip`
+list; it is never counted as coverage.
+
 ## Worklog gate
 
 `docs/agent-worklog.md` must carry a decision trail. Each entry names the
@@ -145,8 +171,9 @@ decision trail or still describes the seed state.
 ## Enforcement rollout
 
 Phase one (now): TypeScript strict, ESLint boundaries, dependency-cruiser, Vitest,
-StyleX (which makes global-selector violations structurally impossible and removes
-the need for a CSS boundary checker).
+Playwright with a checked acceptance matrix, content-locked skills, and StyleX (which
+makes global-selector violations structurally impossible and removes the need for a
+CSS boundary checker).
 
 Phase two (after 2–3 real apps): decision-contract catalogue expanded from observed
 failures; integrity signing of framework surfaces.
