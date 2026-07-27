@@ -46,6 +46,9 @@ const browserObservableRules = [
 /**
  * Invariants discharged statically. Listing them here keeps the division explicit:
  * a graph cycle is found by reading the declaration, never by clicking.
+ *
+ * `projection-graph-acyclic` → `npm run check:projection-graph`
+ * `kernel-dependency-free`   → `npm run check:boundaries` and the ESLint boundaries rules
  */
 const staticallyCheckedRules = ["projection-graph-acyclic", "kernel-dependency-free"];
 

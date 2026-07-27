@@ -7,7 +7,8 @@ module.exports = {
   forbidden: [
     {
       name: "no-circular",
-      comment: "projection-graph-acyclic / module acyclicity. Shortest cycle reported.",
+      comment:
+        "Module acyclicity. NOT projection-graph-acyclic — that is a different graph (projection nodes referencing each other's discriminants) and is checked by scripts/check-projection-graph.mjs. A repository can pass one and fail the other.",
       severity: "error",
       from: {},
       to: { circular: true },

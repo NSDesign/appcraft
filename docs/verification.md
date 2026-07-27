@@ -26,10 +26,13 @@ move one tier higher — not automatically to the full gate.
 |---|---|
 | `npm run typecheck` | TypeScript, strict, across `src`, `e2e`, `scripts` |
 | `npm run lint` | ESLint plus `eslint-plugin-boundaries` element and external rules |
-| `npm run check:boundaries` | dependency-cruiser over `src` and `e2e`; reports the shortest cycle |
+| `npm run check:boundaries` | dependency-cruiser over the **module** graph of `src` and `e2e` |
+| `npm run check:projection-graph` | The **projection reference** graph is acyclic; reports the shortest cycle |
 | `npm run check:docs` | `AGENTS.md` and the decision contract have not drifted |
+| `npm run check:worklog` | The latest decision-trail entry is complete, evidenced, and cites real rule ids |
 | `npm run check:preflight` | The latest worklog attestation names a tier and matches the changed files |
 | `npm run check:skills` | `.agents/skills` present and content-locked against `skills-lock.json` |
+| `npm run test:scripts` | `node --test` over the checker unit tests |
 | `npm run test:unit` | Vitest over `src` |
 | `npm run test:browser` | Playwright over `e2e` |
 | `npm run test:browser:perf` | The `browser perf:` scenarios only, single worker |
@@ -43,6 +46,14 @@ The split matters, because most retention bugs pass a unit test.
 - **Static checkers** prove structural claims: the kernel imports nothing, the module
   and projection graphs are acyclic, product code does not reach past the facade.
   They cannot prove that a value survived a switch.
+
+  The two graphs are **not the same graph**. `check:boundaries` reads the module
+  import graph; `check:projection-graph` reads the reference graph formed by
+  projection nodes depending on each other's discriminants. A repository can pass one
+  and fail the other, so neither substitutes for the other. The projection extractor
+  lands with the schema route; until then the checker reports that it has no input,
+  and the cycle analysis is proven against fixtures in
+  `scripts/projection-graph.test.mjs`.
 - **Unit tests** prove kernel semantics: `select` does not delete, `writeActive`
   writes one branch, `evictDerived` drops the right fields. They run against the
   envelope, so they cannot prove that the surface bound to a branch shows the

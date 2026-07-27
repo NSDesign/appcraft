@@ -83,7 +83,12 @@ Use the smallest route set covering the changed surface.
    never appear in output.
 6. **Inactive branches never gate validation.** An invalid inactive branch does not
    block a valid document.
-7. **The projection reference graph is acyclic.**
+7. **The projection reference graph is acyclic.** Checked by
+   `npm run check:projection-graph` — a different graph from the module graph
+   `check:boundaries` covers, and a repository can pass one and fail the other. The
+   extractor that reads projection nodes out of a declared schema lands with the
+   schema route; until then the checker reports that it has no input rather than
+   passing on an empty graph.
 8. **Panel-scale discriminants persist.** Reopening an app restores the last active
    tab/tool; derived state still rebuilds.
 9. **The kernel has no dependencies.** `src/appcraft/kernel` must not import the
@@ -165,8 +170,15 @@ list; it is never counted as coverage.
 `docs/agent-worklog.md` must carry a decision trail. Each entry names the
 user-visible result, the contract rules applied, rejected alternatives, evidence,
 and remaining risks. Prose is context, not execution proof — verification claims
-must be backed by test output. `npm run test` fails if the worklog is missing its
-decision trail or still describes the seed state.
+must be backed by test output.
+
+`npm run check:worklog` enforces this on the **most recent** entry: all five fields
+present, Evidence naming the command that produced it (or stating plainly that the
+pass produced none), and every cited rule id existing in `docs/decision-contract.md`.
+Earlier entries are history and are not re-checked — a later rule rename must not
+retroactively invalidate a pass that was honest when written.
+`npm run check:preflight` separately fails while the worklog still declares the seed
+state.
 
 ## Enforcement rollout
 

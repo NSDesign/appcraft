@@ -39,6 +39,28 @@ Append one block per implementation pass, **before** editing.
       fixture-gated suite.
 ```
 
+```yaml
+- pass: enforcement-truth-fixes
+  routes: [enforcement, docs]
+  docs_read:
+    - AGENTS.md
+    - docs/design/appcraft-inheritance-delta-map.md
+    - docs/decision-contract.md
+    - docs/verification.md
+  tier: 2
+  tier_reason: >
+    Adds two checkers and corrects two false enforcement claims. Blast radius is the
+    gate itself: every later pass is measured by it. Not tier 3 — no kernel, schema
+    or store code exists to affect. Not tier 0 — this changes what passes and fails.
+  run:
+    - npm test
+    - node --test scripts/projection-graph.test.mjs
+  skip:
+    - >
+      The twelve fixture-dependent browser specs, unchanged from the previous pass:
+      src/app still has no entry point.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -139,3 +161,66 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
     fixture at collection scale before they mean anything.
   - Twelve invariant specs are currently unproven. Anyone reading a green run should
     read this `skip` list alongside it.
+
+### Enforcement truth — worklog gate and projection-graph checker
+
+- **Result:** two places where the repository claimed enforcement it did not have are
+  now enforced, and one plan document covering the scaffolder and the style-guide
+  interview.
+  - `scripts/check-worklog.mjs` — `AGENTS.md` stated that `npm run test` fails if the
+    worklog is missing its decision trail. It did not: deleting the entire trail
+    passed the gate. The checker now requires the most recent entry to carry all five
+    fields, to cite the command that produced its evidence (or state plainly that the
+    pass produced none), and to cite only rule ids that exist in the decision
+    contract. Earlier entries are history and are not re-checked.
+  - `scripts/check-projection-graph.mjs` + `scripts/projection-graph.mjs` —
+    `.dependency-cruiser.cjs` labelled its `no-circular` rule
+    "projection-graph-acyclic", which was a false attribution: that rule reads the
+    module import graph, not the reference graph formed by projection nodes depending
+    on each other's discriminants. The delta map calls this "the one genuinely new
+    checker" and it was a comment. Shortest-cycle detection with deterministic
+    tie-breaking is now implemented and unit-tested; the extractor lands with the
+    schema route, and until then the checker reports that it has no input rather than
+    passing on an empty graph.
+  - `docs/plans/scaffolder-and-style-guide.md` — the reviewed plan.
+- **Rules applied:** `projection-graph-acyclic`, `worklog-decision-trail`,
+  `evidence-over-assertion`, `verification-tier-preclassified`.
+- **Rejected alternatives:**
+  - *Deleting the two claims instead of implementing them.* Cheaper and honest, but
+    both are load-bearing: the projection graph checker is the one new mechanism Δ1
+    contributes, and the worklog gate is what stops the decision trail decaying into
+    prose. Removing them would have made the repository honest and weaker.
+  - *A projection-graph checker that passes on an empty graph.* It would have read as
+    green in every run until the schema route lands, which is exactly the theatre
+    `evidence-over-assertion` names. It reports "no input" instead.
+  - *Checking every decision-trail entry rather than the latest.* A rule rename would
+    then retroactively fail passes that were honest when written, which punishes
+    keeping history.
+  - *Putting the cycle analysis in `src/appcraft/kernel`.* It is enforcement, not
+    runtime, and `kernel-dependency-free` should not be spent on a checker. It sits in
+    `scripts/` with `node --test` coverage, following Toolcraft's precedent.
+- **Evidence:**
+  - `npm test` — exit 0. `check:skills` 7 locked; `check:docs` 27 rule ids;
+    `check:worklog` OK; `check:preflight` tier 2; `check:boundaries` no violations;
+    `check:projection-graph` reports no input; `test:scripts` 10 passed;
+    `test:browser` 7 passed, 12 skipped.
+  - Negative tests run by hand against a scratch fixture: deleting the decision trail,
+    omitting Rejected alternatives, evidence with no command, a typo'd rule id, and a
+    trail citing no ids — each fails with the specific reason. An entry declaring
+    "none yet — design only" passes, so a genuine docs-only pass is not forced to
+    invent evidence.
+  - `node --test scripts/projection-graph.test.mjs` — 10 passed, covering self-cycles,
+    shortest-wins, declaration-order independence, dangling references, and duplicate
+    ids.
+- **Risks:**
+  - The projection-graph checker has no real input until the schema route lands. Its
+    analysis is proven against fixtures; its *extraction* is not written, and the
+    declared input path (`src/appcraft/schema/projection-graph.json`) is a guess that
+    the schema route may change.
+  - `check:worklog` inspects the latest entry only. A pass that appends a complete
+    entry while leaving an earlier one hollow is not caught, by design.
+  - Three review findings are recorded but not fixed: the routing table covers only
+    architecture-layer routes and cannot route an app build; the decision-contract
+    tables are still detect-only rather than generated; and `check-contract-docs.mjs`
+    only flags an unknown rule id when it shares a first hyphen-segment with a real
+    one. All three are scheduled in the plan.
