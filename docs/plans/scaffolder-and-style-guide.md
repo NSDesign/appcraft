@@ -51,6 +51,8 @@ Three properties worth carrying over, and one worth dropping:
   into `templates/`, so the published template cannot drift from the framework it
   came from. **Carry over** — this is what makes the framework and the starter the
   same code.
+- **Package-manager detection across npm and pnpm.** **Drop** — npm only (§6). The
+  detection code stays, reduced to refusing clearly rather than guessing.
 - **Templates carrying the whole control library.** 184 files of UI. **Drop** — Δ2
   replaces it with Astryx. Our `templates/ui` equivalent does not exist; the starter
   depends on `@astryxdesign/core` instead.
@@ -110,8 +112,10 @@ Steps, in order:
 1. Resolve options; prompt for anything missing via `@clack/prompts`.
 2. Generate transactionally into a staging sibling; validate there with
    `check:docs`, `check:skills` and the starter's own typecheck; promote by rename.
-3. Install dependencies with the package manager that launched the CLI (detected
-   from the user-agent, as Toolcraft does).
+3. Install dependencies with npm. The CLI reads `npm_config_user_agent` only to
+   detect a *different* manager and say so plainly — npm is the supported manager
+   (§6), and silently generating pnpm- or bun-flavoured commands we do not test would
+   be worse than declining.
 4. `astryx init` in the generated app — it installs `@astryxdesign/core`, sets up
    theming, and adds agent docs, so we do not reimplement any of that.
 5. `skills add <appcraft-skills> --agent claude-code` (unless `--no-skills`).
@@ -252,11 +256,81 @@ implementation stays first.
 Passes 2 and 5 do not depend on the restructure and can run early; 3 is the
 disruptive one and wants to land alone.
 
-## 6. Open questions
+## 6. Settled
 
-- **npm scope.** Is `@nsdesign` registered and publishable? If not, the package name
-  is the first thing to settle, since it appears in every doc and printed hint.
-- **Starter package manager.** Toolcraft detects npm and pnpm. Same two, or add bun?
-- **Astryx version pinning.** Astryx is at `0.1.8` and moving; the starter should pin
-  a minor and the CLI should say which version it generated against, so a theme built
-  under one version is not silently rebuilt under another.
+- **Package name — `@nsdesign/appcraft`.** The npm account username is `nsdesign`,
+  and npm reserves the scope matching a username, so `@nsdesign` needs no claiming.
+  First publish still needs `--access public`: scoped packages default to private and
+  the first publish otherwise fails asking for a paid plan.
+- **Publishing — GitHub Actions with OIDC trusted publishing.** The npm account is
+  linked to the GitHub account of the same name, so the release workflow can mint a
+  short-lived token per run instead of storing a long-lived `NPM_TOKEN` secret. This
+  is how Astryx publishes its own packages — their npm metadata shows the publisher as
+  GitHub Actions with a trusted-publisher OIDC config. It also means provenance
+  attestation comes free, which matters for a package whose whole pitch is
+  verifiability.
+- **Package manager — npm only.** Not pnpm, yarn, or bun. The CLI still reads
+  `npm_config_user_agent`, but only to fail helpfully if launched through another
+  manager, rather than to generate flavoured commands. The starter ships no lockfile
+  and the install step generates `package-lock.json`.
+- **Astryx usage — composition, not swizzling** (working direction, see below).
+
+## 7. Open questions
+
+### Astryx version pinning
+
+Astryx is `0.1.8` and pre-1.0, so under semver a **minor bump may break** —
+`^0.1.8` permits `0.2.0` and is not a safe range. Astryx clearly expects churn: the
+CLI ships `astryx upgrade` with codemods and `--from`/`--to`, error codes
+`ERR_VERSION_DETECT` and `ERR_INVALID_VERSION`, and an `astryx doctor` with a
+CI-friendly exit code.
+
+Three questions, in the order they should be researched:
+
+1. **Is there a published stability or 1.0 commitment?** This decides pin-exact
+   versus trust-a-caret, and nothing else can be settled before it.
+2. **Do codemods cover swizzled source, or only unswizzled call sites?** This is the
+   actual price of the composition-versus-swizzle decision below, and it is currently
+   assumed rather than known.
+3. **Does `defineTheme`'s token surface change across minors?** A theme built under
+   one Astryx version and silently rebuilt under another is the failure mode that
+   would quietly break the style-guide feature — the tokens would still compile, and
+   the app would just look different.
+
+Working hypothesis, to be confirmed rather than assumed: **pin exact in the starter,
+and record the generated-against version in the app** so `astryx upgrade --from` has a
+truthful starting point.
+
+### Composition versus swizzling
+
+Astryx offers two ways to build on its primitives, with very different long-run costs:
+
+- **Compose** — use components as shipped, styled through props and `xstyle`.
+  Codemods apply cleanly and upgrades are close to free.
+- **Swizzle** — `astryx swizzle` copies a component's source into the repository so
+  you own it. Full control, but it is **a per-component fork**: upstream fixes,
+  accessibility corrections and behaviour changes stop arriving for that component,
+  and every Astryx upgrade becomes a merge you perform. Not a fork of Astryx as a
+  whole — only of the components you eject — but the maintenance shape is a fork's.
+
+**Direction: compose.** Swizzling is the escape hatch, not the default. This is
+already how the contract is levelled — `astryx-before-custom-control` is a *default*
+and `custom-control-justified` is an *escape-hatch* requiring written justification
+and stronger coverage.
+
+The open part is **policy, not architecture**: which creative controls justify
+ejecting, and who carries the upgrade cost when they do. Colour is the obvious
+pressure point, since Astryx ships zero colour components — but that argues for
+composing new controls *on top of* Astryx primitives rather than swizzling existing
+ones, which is a different move and cheaper.
+
+The delta map already anticipated the architecture side: *"Signable surface now
+includes swizzled Astryx source."* So if swizzling is chosen for a given control, the
+integrity mechanism is ready for it. Question 2 above is what prices the decision.
+
+### Consequence for the style-guide interview
+
+If question 3 resolves badly — tokens moving across minors — the interview needs to
+record the Astryx version alongside the answers in `docs/style-guide.md`, so a later
+rebuild can tell "the user chose this" from "the token meaning changed underneath it".
+Cheap to add now, expensive to reconstruct later, so the field goes in regardless.

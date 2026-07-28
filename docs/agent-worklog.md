@@ -61,6 +61,27 @@ Append one block per implementation pass, **before** editing.
       src/app still has no entry point.
 ```
 
+```yaml
+- pass: plan-decisions-recorded
+  routes: [docs]
+  docs_read:
+    - docs/plans/scaffolder-and-style-guide.md
+    - docs/decision-contract.md
+  tier: 0
+  tier_reason: >
+    Plan document only. No implementation file, checker or config changes, so nothing
+    the gate measures moves. Recorded rather than skipped because the decisions settled
+    here bind passes 4 and 7.
+  run:
+    - npm run check:docs
+    - npm run check:worklog
+    - npm test
+  skip:
+    - >
+      Nothing additional beyond the standing fixture-gated browser specs; this pass
+      touches no code.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -224,3 +245,45 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
     tables are still detect-only rather than generated; and `check-contract-docs.mjs`
     only flags an unknown rule id when it shares a first hyphen-segment with a real
     one. All three are scheduled in the plan.
+
+### Plan decisions — package name, publishing, package manager, Astryx direction
+
+- **Result:** four open questions in the scaffolder plan settled and three new ones
+  recorded in their place.
+  - **Settled.** Package name `@nsdesign/appcraft` — the npm username is `nsdesign`
+    and npm reserves the scope matching a username, so nothing needs claiming; first
+    publish still needs `--access public`. Publishing via GitHub Actions with OIDC
+    trusted publishing rather than a stored token, which the linked GitHub account of
+    the same name makes available and which Astryx itself uses. npm as the only
+    supported package manager. Composition over swizzling as the working direction for
+    building on Astryx primitives.
+  - **Opened.** The three Astryx pinning questions — whether a stability or 1.0
+    commitment exists, whether codemods cover swizzled source, and whether the
+    `defineTheme` token surface moves across minors — plus the composition-versus-
+    swizzle *policy* fork, which was not captured anywhere before.
+- **Rules applied:** `astryx-before-custom-control` and `custom-control-justified`
+  (the levels the contract already gives these are exactly the composition-first
+  position, so the direction needed recording rather than deciding);
+  `envelope-versioned` (the same reasoning that versions a persisted envelope argues
+  for recording the Astryx version beside the style-guide answers).
+- **Rejected alternatives:**
+  - *Supporting pnpm and bun because Toolcraft supports pnpm.* Generating commands for
+    a manager we do not test is worse than declining: the first instruction a user
+    reads after scaffolding would be untested. The CLI detects and refuses instead.
+  - *Treating swizzling as equivalent to composition and deciding later.* It is a
+    per-component fork — upstream fixes and accessibility corrections stop arriving,
+    and every upgrade becomes a merge. Naming the cost now is what makes the escape
+    hatch a decision rather than a drift.
+  - *Resolving the Astryx pinning questions by reasoning.* They are empirical. The
+    hypothesis (pin exact, record the generated-against version) is written down as a
+    hypothesis, not a finding.
+- **Evidence:** `npm test` — exit 0; `check:docs` 27 rule ids, `check:worklog` OK on
+  this entry, 10 script tests, 7 browser meta-gates, 12 fixture-gated specs skipped.
+  Tier 0 pass: the evidence is that nothing regressed, not that anything new was proven.
+- **Risks:**
+  - The npm scope reservation is inferred from npm's username rule, not verified by
+    logging in — this sandbox has no npm credentials. Confirm before pass 7.
+  - The three Astryx questions gate the style-guide feature's durability, and none is
+    answered. If the token surface moves across minors, themes built today may render
+    differently later; recording the Astryx version in `docs/style-guide.md` is a
+    cheap hedge that does not remove the risk.
