@@ -73,6 +73,37 @@ export default tseslint.config(
     },
   },
   {
+    // theme-tokens-not-literals. A hex value or a px font-size in product code means
+    // the style-guide interview asked questions that changed nothing.
+    files: ["starter/src/app/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "Literal[value=/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/]",
+          message:
+            "theme-tokens-not-literals: read an Astryx colour token instead of hard-coding a hex value.",
+        },
+        {
+          selector: "Literal[value=/^(?:rgb|rgba|hsl|hsla)\\(/]",
+          message:
+            "theme-tokens-not-literals: read an Astryx colour token instead of hard-coding a colour function.",
+        },
+        {
+          selector: "Property[key.name='fontFamily'] > Literal",
+          message:
+            "theme-tokens-not-literals: read --font-family-body/heading/code instead of naming a family.",
+        },
+        {
+          selector: "Property[key.name='fontSize'] > Literal",
+          message:
+            "theme-tokens-not-literals: read a --text-* size token instead of hard-coding a size.",
+        },
+      ],
+    },
+  },
+  {
     files: ["scripts/**/*.mjs", "packages/cli/**/*.mjs", "*.js"],
     languageOptions: {
       sourceType: "module",

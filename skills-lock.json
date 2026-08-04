@@ -27,6 +27,11 @@
       "sourceType": "repo",
       "contentHash": "20203675c950b325ad20d195fce91ea8529a14eeb92b7867a7fb4e590e299f30"
     },
+    "style-guide": {
+      "source": ".agents/skills/style-guide/SKILL.md",
+      "sourceType": "repo",
+      "contentHash": "9e404feabd7b286f5de40a9925062a4a7627c028ab329c8ec2770d102bfbc394"
+    },
     "systematic-debugging": {
       "source": ".agents/skills/systematic-debugging/SKILL.md",
       "sourceType": "repo",

@@ -58,11 +58,17 @@ Generated from the appcraft route registry. Editing this table has no effect.
 Use the smallest route set covering the work.
 
 **Style guide comes first.** On the first build request, the `style-guide` route runs
-before implementation: you are asked for the app's base style properties — base
-theme, accent colour, neutral temperature, contrast, typefaces, base size and scale
-ratio, corner radius — and every answer may be left at its default. The answers
-become an Astryx `defineTheme` file and `docs/style-guide.md`. Do not pick a palette
-or a typeface on the user's behalf without asking.
+before implementation: you are asked for the app's base style properties — base theme,
+accent colour, neutral temperature, contrast, typefaces, base size and scale ratio,
+corner radius — and every answer may be left at its default.
+
+Offer `tools/style-guide/index.html` first: it previews the choice on a live specimen
+of the archetypes and emits the theme. Asking in conversation is the fallback.
+
+The answers become `src/app/theme.ts` and `docs/style-guide.md`, which records **every**
+property including those left at default, plus the Astryx version they were chosen
+against. `npm run check:style-guide` fails on an incomplete record. Do not pick a
+palette or a typeface on the user's behalf without asking.
 
 ## Invariants
 

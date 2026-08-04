@@ -191,6 +191,35 @@ Append one block per implementation pass, **before** editing.
       directory and asserting on the result instead.
 ```
 
+```yaml
+- pass: style-guide-route
+  routes: [starter, enforcement, docs]
+  docs_read:
+    - AGENTS.md
+    - docs/plans/scaffolder-and-style-guide.md
+    - docs/decision-contract.md
+    - starter/docs/appcraft/style-guide.md
+  tier: 2
+  tier_reason: >
+    Adds the style-guide skill, an interactive picker shipped into every generated
+    app, and the checkers that stop the interview producing a theme the app ignores.
+    No kernel or projection code is touched, so not tier 3; it does change what the
+    gate proves, so not tier 0.
+  run:
+    - npm run check:style-guide
+    - npm run verify:quick
+    - npm test
+  skip:
+    - >
+      The twelve fixture-dependent browser specs. The fixture app is a separate pass:
+      it needs the whole Δ2 substrate (React, Vite, Astryx, StyleX) and bundling it
+      here would make two changes at once.
+    - >
+      Rendering the picker in a browser. Chromium in this environment does not match
+      the pinned Playwright build, so the page is verified structurally and by its
+      extracted output rather than by screenshot.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -656,3 +685,67 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
     every generated app exactly as they do here. A user's first `npm test` is green
     with twelve invariants unproven, which the contract states but a hurried reader
     will miss.
+
+### Style-guide route — an interactive picker, and the checkers that make it matter
+
+- **Result:** the first build request now agrees the app's style rather than assuming
+  it, and the agreement is enforced.
+  - `.agents/skills/style-guide/SKILL.md` — the eighth skill. Runs after the user
+    describes the app and before any code is written.
+  - `starter/tools/style-guide/index.html` — a self-contained interactive picker,
+    shipped into every generated app. Eight dials; a live specimen rendering the
+    appcraft archetypes (master-detail, canvas, inspector) in the theme being chosen;
+    independent light/dark preview; emits a `defineTheme` snippet, a JSON payload, and
+    a downloadable `style-guide.json`.
+  - `scripts/check-style-guide.mjs` — if `src/app/theme.ts` exists, `docs/style-guide.md`
+    must record all eight properties and the Astryx version they were chosen against.
+  - `theme-tokens-not-literals` enforced by an ESLint `no-restricted-syntax` block over
+    `starter/src/app`: hex literals, colour functions, `fontFamily` and `fontSize`
+    literals are errors.
+- **Rules applied:** `theme-tokens-not-literals`, `figma-variables-to-tokens`,
+  `evidence-over-assertion`, `verification-tier-preclassified`, `preflight-attested`,
+  `worklog-decision-trail`, `layout-archetypes-only` (the specimen renders the curated
+  archetypes and nothing else).
+- **Rejected alternatives:**
+  - *A generic component gallery as the preview.* It would preview the tokens without
+    previewing the decision. The specimen renders the archetypes the user is about to
+    compose, so the question being answered is visible.
+  - *Giving the picker its own visual identity.* The chrome is deliberately achromatic
+    — the only saturated colour on screen is the accent being chosen. A tool that
+    imposes its own hue makes every preview a lie.
+  - *Reproducing Astryx's HCT derivation.* Not feasible without the library, and
+    pretending otherwise would be worse than approximating openly. The picker derives
+    in OKLCH and states plainly that `astryx theme build` is authoritative.
+  - *Asking motion.* The base theme's durations are coherent with its palette, and a
+    user forming an opinion about easing on first contact is rare enough that asking
+    costs more than it returns. Eleven questions to get eight useful answers is how an
+    interview becomes a thing users skip.
+  - *Bundling the fixture app into this pass.* Unskipping the twelve browser specs
+    needs the whole Δ2 substrate — React, Vite, Astryx, StyleX. Two changes at once.
+  - *Recording only the answers the user changed.* A default that was chosen and a
+    question that was never asked look identical afterwards. The record carries all
+    eight, and `check:style-guide` fails without them.
+- **Evidence:**
+  - Colour derivation tested by extracting the module and running it under node:
+    hex → OKLCH → hex round-trips with **zero** channel drift across seven colours
+    including pure black and white; warm and cool neutrals differ; standard and high
+    contrast differ; a pale accent (`#FFE066`) correctly flips its foreground to dark.
+  - `node --check` on the extracted module — syntax clean.
+  - `check:style-guide` negative-tested across four states: theme without a record,
+    partial record (named the five missing properties), complete record without an
+    Astryx version, and complete. Each failed or passed as intended.
+  - The ESLint rule reported all three violations in a probe file — hex, family, size.
+  - `npm test` — exit 0. 24 script tests, 16 CLI tests, 25 unit tests, 7 browser
+    meta-gates, 39 modules clean.
+- **Risks:**
+  - **The picker has never been rendered in a browser.** Chromium in this environment
+    does not match the pinned Playwright build, so it is verified structurally and
+    through its extracted maths. Layout and interaction bugs would not have been
+    caught. It needs a real look before anyone relies on it.
+  - The OKLCH approximation will diverge from Astryx's HCT output. The page says so,
+    but a user comparing the preview to the built theme will still see a difference.
+  - `check:style-guide` matches property names as substrings of the record, so a
+    document mentioning "contrast" in prose satisfies that row without recording a
+    decision. It catches omission, not evasion.
+  - The eight properties are drawn from Astryx `0.1.8`. If the `defineTheme` surface
+    moves, the picker and the skill drift together and nothing detects it.

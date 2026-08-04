@@ -3,6 +3,21 @@
 Runs on the **first build request**, before implementation. The user is asked for the
 app's base style properties rather than having them chosen silently.
 
+## Offer the picker first
+
+`tools/style-guide/index.html` — open it in a browser, or serve it from GitHub Pages.
+It renders a live specimen of the archetypes you are about to compose (master-detail,
+canvas, inspector) in the theme being chosen, in light and dark, and emits a
+`defineTheme` snippet plus a `style-guide.json`. The user pastes either back.
+
+Most people cannot judge a hex value or a scale ratio from its name. Asking in
+conversation is the fallback for someone who already knows what they want, not the
+default.
+
+The picker approximates Astryx's palette derivation in OKLCH so a choice can be judged
+quickly. `astryx theme build` produces the authoritative values via HCT — close, not
+identical. Say so rather than presenting the preview as final.
+
 ## The questions
 
 Seven. Every one has a real default, so "all defaults" is one answer.
@@ -17,8 +32,9 @@ Seven. Every one has a real default, so "all defaults" is one answer.
 | 6 | Heading typeface | same as body (default) · a family | `typography.heading` |
 | 7 | Base font size and scale ratio | 16 px / 1.2 (default) | `typography.scale` |
 
-Corner radius is asked as an eighth question when the design calls for it
-(`radius.base`, `radius.multiplier`). **Motion is not asked** — the base theme's
+| 8 | Corner radius | 4 px (default) | `radius.base` |
+
+**Motion is not asked** — the base theme's
 durations are coherent with its palette, and a user forming an opinion about easing on
 first contact is rare enough that asking costs more than it returns.
 
