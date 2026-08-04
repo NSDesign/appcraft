@@ -15,14 +15,15 @@ import path from "node:path";
 
 import { projectRoot } from "./routes.mjs";
 
-/** The eight properties the style-guide route agrees. Names as the skill states them. */
+/** The nine properties the style-guide route agrees. Names as the skill states them. */
 const REQUIRED_PROPERTIES = [
   "base theme",
   "accent",
   "neutral",
   "contrast",
-  "body",
+  "base typeface",
   "heading",
+  "body",
   "scale",
   "radius",
 ];

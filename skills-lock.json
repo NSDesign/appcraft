@@ -30,7 +30,7 @@
     "style-guide": {
       "source": ".agents/skills/style-guide/SKILL.md",
       "sourceType": "repo",
-      "contentHash": "9e404feabd7b286f5de40a9925062a4a7627c028ab329c8ec2770d102bfbc394"
+      "contentHash": "758b169a3ae14cbcd9570e39979d7a2108450232cd1194cc760ee3b5b927efe7"
     },
     "systematic-debugging": {
       "source": ".agents/skills/systematic-debugging/SKILL.md",

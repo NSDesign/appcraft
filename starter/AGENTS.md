@@ -59,8 +59,9 @@ Use the smallest route set covering the work.
 
 **Style guide comes first.** On the first build request, the `style-guide` route runs
 before implementation: you are asked for the app's base style properties — base theme,
-accent colour, neutral temperature, contrast, typefaces, base size and scale ratio,
-corner radius — and every answer may be left at its default.
+accent colour, neutral temperature, contrast, base/heading/body typefaces, base size
+and scale ratio, corner radius — and every answer may be left at its default. Heading
+and body typefaces inherit the base unless set.
 
 Offer `tools/style-guide/index.html` first: it previews the choice on a live specimen
 of the archetypes and emits the theme. Asking in conversation is the fallback.

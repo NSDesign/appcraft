@@ -737,6 +737,22 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
   - The ESLint rule reported all three violations in a probe file — hex, family, size.
   - `npm test` — exit 0. 24 script tests, 16 CLI tests, 25 unit tests, 7 browser
     meta-gates, 39 modules clean.
+- **Follow-up in the same pass — typeface cascade.** The picker asked for body and
+  heading families as free text, with heading falling back to body. Replaced with three
+  dials — base, heading, body — where **heading and body inherit the base unless set**,
+  each a grouped catalogue plus a "Custom…" free-text option. Astryx has no "base"
+  family, so it is a convenience of the interview: the emitted theme carries the
+  **resolved** `typography.body` and `typography.heading` rather than a fallback chain a
+  later reader has to reconstruct. The property count went from eight to nine and
+  `check:style-guide` was updated with it. Catalogue entries are grouped by whether they
+  will actually render — system stacks always, common desktop faces usually, web fonts
+  only where installed — because a misremembered family name falls back silently and the
+  preview then lies about the choice.
+  Verified by extracting the resolution logic and running it: all-default emits no
+  typography at all; base alone fills both; base plus heading overrides one; base plus
+  body overrides the other; heading without a base emits heading only. Generic families
+  (`system-ui`) are emitted unquoted and named families quoted, which is the difference
+  between a working stack and a silently ignored one.
 - **Risks:**
   - **The picker has never been rendered in a browser.** Chromium in this environment
     does not match the pinned Playwright build, so it is verified structurally and

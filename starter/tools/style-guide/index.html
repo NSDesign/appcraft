@@ -468,7 +468,7 @@
   <div>
     <h1 class="wordmark">appcraft · style guide</h1>
     <p>
-      Eight decisions, each with a real default. Adjust them until the specimen looks
+      Nine decisions, each with a real default. Adjust them until the specimen looks
       like the app you are about to build, then hand the emitted theme to your agent.
     </p>
   </div>
@@ -538,22 +538,34 @@
       <legend>Typography</legend>
 
       <div class="dial">
-        <label for="body-font">
-          Body typeface
-          <span class="default-flag" id="flag-bodyFont">default</span>
+        <label for="base-font">
+          Base typeface
+          <span class="default-flag" id="flag-baseFont">default</span>
         </label>
-        <input type="text" id="body-font" name="bodyFont" value="" spellcheck="false"
-               placeholder="inherit from base theme" />
-        <p class="hint">A family name. Leave empty to keep the base theme's.</p>
+        <select id="base-font" data-font-select="baseFont"></select>
+        <input type="text" id="base-font-custom" data-font-custom="baseFont" spellcheck="false"
+               placeholder="Family name" aria-label="Base typeface, custom family name" hidden />
+        <p class="hint">Heading and body inherit this unless you set them below.</p>
       </div>
 
       <div class="dial">
         <label for="heading-font">
           Heading typeface
-          <span class="default-flag" id="flag-headingFont">default</span>
+          <span class="default-flag" id="flag-headingFont">inherits</span>
         </label>
-        <input type="text" id="heading-font" name="headingFont" value="" spellcheck="false"
-               placeholder="same as body" />
+        <select id="heading-font" data-font-select="headingFont"></select>
+        <input type="text" id="heading-font-custom" data-font-custom="headingFont" spellcheck="false"
+               placeholder="Family name" aria-label="Heading typeface, custom family name" hidden />
+      </div>
+
+      <div class="dial">
+        <label for="body-font">
+          Body typeface
+          <span class="default-flag" id="flag-bodyFont">inherits</span>
+        </label>
+        <select id="body-font" data-font-select="bodyFont"></select>
+        <input type="text" id="body-font-custom" data-font-custom="bodyFont" spellcheck="false"
+               placeholder="Family name" aria-label="Body typeface, custom family name" hidden />
       </div>
 
       <div class="dial">
@@ -793,8 +805,67 @@
 
   /* ------------------------------------------------------------------------ state */
 
+  /*
+    A curated list rather than a free-text box alone. Naming a family from memory is
+    where typography choices go wrong — a misremembered name silently falls back and
+    the preview lies. "Custom…" is still there for anything not listed.
+
+    Grouped by what will actually render: system stacks always resolve, common desktop
+    faces usually do, and web fonts render only where installed — which the hint says
+    plainly rather than letting a silent fallback pass for a choice.
+  */
+  const FONT_CATALOGUE = [
+    {
+      label: "System",
+      options: [
+        ["system-ui", "System UI"],
+        ["ui-serif", "System serif"],
+        ["ui-monospace", "System monospace"],
+        ["ui-rounded", "System rounded"],
+      ],
+    },
+    {
+      label: "Commonly installed",
+      options: [
+        ["Helvetica Neue", "Helvetica Neue"],
+        ["Arial", "Arial"],
+        ["Verdana", "Verdana"],
+        ["Trebuchet MS", "Trebuchet MS"],
+        ["Georgia", "Georgia"],
+        ["Palatino", "Palatino"],
+        ["Times New Roman", "Times New Roman"],
+        ["Courier New", "Courier New"],
+      ],
+    },
+    {
+      label: "Web fonts — render only where installed or loaded",
+      options: [
+        ["Inter", "Inter"],
+        ["Albert Sans", "Albert Sans"],
+        ["Space Grotesk", "Space Grotesk"],
+        ["IBM Plex Sans", "IBM Plex Sans"],
+        ["Fraunces", "Fraunces"],
+        ["Source Serif 4", "Source Serif 4"],
+        ["JetBrains Mono", "JetBrains Mono"],
+      ],
+    },
+  ];
+
+  /** Sentinel values. Empty means "inherit"; CUSTOM reveals the text field. */
+  const INHERIT = "";
+  const CUSTOM = "__custom__";
+
+  const FONT_FIELDS = ["baseFont", "headingFont", "bodyFont"];
+
+  const INHERIT_LABEL = {
+    baseFont: "Inherit from base theme",
+    bodyFont: "Inherit from base typeface",
+    headingFont: "Inherit from base typeface",
+  };
+
   const DEFAULTS = Object.freeze({
     accent: "#5B6CFF",
+    baseFont: "",
     baseSize: 16,
     baseTheme: "neutral",
     bodyFont: "",
@@ -811,9 +882,24 @@
   const $ = (id) => document.getElementById(id);
   const specimen = $("specimen");
 
-  function fontStack(name, fallback) {
-    const trimmed = name.trim();
-    return trimmed ? `"${trimmed}", ${fallback}` : fallback;
+  /**
+   * Base fills heading and body; either may override it. Empty means inherit, so a
+   * user who sets only the base gets it everywhere without saying so three times.
+   */
+  function resolvedFamilies() {
+    const base = state.baseFont.trim();
+    return {
+      body: (state.bodyFont.trim() || base) || "",
+      heading: (state.headingFont.trim() || base) || "",
+    };
+  }
+
+  const GENERIC = new Set(["system-ui", "ui-serif", "ui-monospace", "ui-rounded"]);
+
+  function fontStack(family, fallback) {
+    const trimmed = family.trim();
+    if (!trimmed) return fallback;
+    return GENERIC.has(trimmed) ? `${trimmed}, ${fallback}` : `"${trimmed}", ${fallback}`;
   }
 
   function render() {
@@ -821,8 +907,9 @@
     const type = typeScale(state);
     const shape = radii(state);
 
-    const body = fontStack(state.bodyFont, "system-ui, sans-serif");
-    const heading = fontStack(state.headingFont || state.bodyFont, "system-ui, sans-serif");
+    const families = resolvedFamilies();
+    const body = fontStack(families.body, "system-ui, sans-serif");
+    const heading = fontStack(families.heading, "system-ui, sans-serif");
 
     const vars = {
       "--sg-accent": tokens["color-accent"],
@@ -849,6 +936,7 @@
 
     renderSwatches(tokens);
     renderReadouts();
+    for (const field of FONT_FIELDS) syncFontControls(field);
     renderEmitted();
   }
 
@@ -873,7 +961,7 @@
         ? "Widens the text-to-background gap. Choose this when the app is used in bright rooms."
         : "";
 
-    for (const key of ["baseTheme", "bodyFont", "headingFont"]) {
+    for (const key of ["baseTheme", "baseFont", "headingFont", "bodyFont"]) {
       const flag = $(`flag-${key}`);
       if (flag) flag.hidden = state[key] !== DEFAULTS[key];
     }
@@ -893,8 +981,12 @@
     if (state.baseSize !== DEFAULTS.baseSize || state.scaleRatio !== DEFAULTS.scaleRatio) {
       typography.scale = { base: state.baseSize, ratio: state.scaleRatio };
     }
-    if (state.bodyFont.trim()) typography.body = { family: state.bodyFont.trim() };
-    if (state.headingFont.trim()) typography.heading = { family: state.headingFont.trim() };
+    // Astryx has no "base" family — that is a convenience in this tool. Emit the
+    // resolved values so the theme states what it means rather than relying on a
+    // fallback chain the reader has to reconstruct.
+    const families = resolvedFamilies();
+    if (families.body) typography.body = { family: families.body };
+    if (families.heading) typography.heading = { family: families.heading };
     if (Object.keys(typography).length) theme.typography = typography;
 
     if (state.radiusBase !== DEFAULTS.radiusBase) theme.radius = { base: state.radiusBase, multiplier: 1 };
@@ -994,9 +1086,73 @@
     });
   }
 
-  for (const [id, key] of Object.entries({ "base-theme": "baseTheme", "body-font": "bodyFont", "heading-font": "headingFont" })) {
-    $(id).addEventListener("input", (event) => {
-      state[key] = event.target.value;
+  $("base-theme").addEventListener("input", (event) => {
+    state.baseTheme = event.target.value;
+    render();
+  });
+
+  function buildFontSelect(select, field) {
+    const groups = FONT_CATALOGUE.map(
+      (group) =>
+        `<optgroup label="${group.label}">` +
+        group.options
+          .map(([value, label]) => `<option value="${value}">${label}</option>`)
+          .join("") +
+        `</optgroup>`,
+    ).join("");
+
+    select.innerHTML =
+      `<option value="">${INHERIT_LABEL[field]}</option>` +
+      groups +
+      `<option value="${CUSTOM}">Custom…</option>`;
+  }
+
+  /** Reflect state into the select/custom pair without firing another render. */
+  function syncFontControls(field) {
+    const select = document.querySelector(`[data-font-select="${field}"]`);
+    const custom = document.querySelector(`[data-font-custom="${field}"]`);
+    const value = state[field];
+    const listed = FONT_CATALOGUE.some((group) =>
+      group.options.some(([option]) => option === value),
+    );
+
+    if (value === INHERIT) {
+      select.value = INHERIT;
+      custom.hidden = true;
+      custom.value = "";
+    } else if (listed) {
+      select.value = value;
+      custom.hidden = true;
+      custom.value = "";
+    } else {
+      select.value = CUSTOM;
+      custom.hidden = false;
+      if (custom.value !== value) custom.value = value;
+    }
+  }
+
+  for (const field of FONT_FIELDS) {
+    const select = document.querySelector(`[data-font-select="${field}"]`);
+    const custom = document.querySelector(`[data-font-custom="${field}"]`);
+
+    buildFontSelect(select, field);
+
+    select.addEventListener("change", (event) => {
+      const value = event.target.value;
+      if (value === CUSTOM) {
+        // Keep whatever was typed before, so switching away and back is not a reset.
+        state[field] = custom.value.trim() || " ";
+        custom.hidden = false;
+        custom.focus();
+      } else {
+        state[field] = value;
+        custom.hidden = true;
+      }
+      render();
+    });
+
+    custom.addEventListener("input", (event) => {
+      state[field] = event.target.value;
       render();
     });
   }
@@ -1039,8 +1195,12 @@
     $("accent").value = DEFAULTS.accent.toLowerCase();
     $("accent-hex").value = DEFAULTS.accent;
     $("base-theme").value = DEFAULTS.baseTheme;
-    $("body-font").value = "";
-    $("heading-font").value = "";
+    for (const field of FONT_FIELDS) {
+      state[field] = DEFAULTS[field];
+      const custom = document.querySelector(`[data-font-custom="${field}"]`);
+      custom.value = "";
+      custom.hidden = true;
+    }
     $("base-size").value = String(DEFAULTS.baseSize);
     $("scale-ratio").value = String(DEFAULTS.scaleRatio);
     $("radius-base").value = String(DEFAULTS.radiusBase);

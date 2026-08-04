@@ -20,7 +20,7 @@ identical. Say so rather than presenting the preview as final.
 
 ## The questions
 
-Seven. Every one has a real default, so "all defaults" is one answer.
+Nine. Every one has a real default, so "all defaults" is one answer.
 
 | # | Question | Options | Writes |
 |---|---|---|---|
@@ -28,18 +28,26 @@ Seven. Every one has a real default, so "all defaults" is one answer.
 | 2 | Accent colour | a hex, or the base theme's | `color.accent` |
 | 3 | Neutral temperature | neutral (default) · warm · cool | `color.neutralStyle` |
 | 4 | Contrast | standard (default) · high | `color.contrast` |
-| 5 | Body typeface | the base theme's (default) · a family + fallbacks | `typography.body` |
-| 6 | Heading typeface | same as body (default) · a family | `typography.heading` |
-| 7 | Base font size and scale ratio | 16 px / 1.2 (default) | `typography.scale` |
+| 5 | Base typeface | the base theme's (default) · a family | fills both below |
+| 6 | Heading typeface | **inherits the base** (default) · a family | `typography.heading` |
+| 7 | Body typeface | **inherits the base** (default) · a family | `typography.body` |
+| 8 | Base font size and scale ratio | 16 px / 1.2 (default) | `typography.scale` |
 
-| 8 | Corner radius | 4 px (default) | `radius.base` |
+| 9 | Corner radius | 4 px (default) | `radius.base` |
 
 **Motion is not asked** — the base theme's
 durations are coherent with its palette, and a user forming an opinion about easing on
 first contact is rare enough that asking costs more than it returns.
 
-Astryx derives a full palette from one accent hex via HCT, which is why seven
-questions suffice.
+Astryx derives a full palette from one accent hex via HCT, and the typefaces cascade
+from a single base, which is why the list stays short despite covering colour, type and
+shape.
+
+The picker offers a catalogue of families grouped by whether they will actually
+render — system stacks always, common desktop faces usually, web fonts only where
+installed — plus a free-text option. Asking for a family name from memory is where
+typography choices go wrong: a misremembered name falls back silently and the preview
+then lies.
 
 ## What it produces
 
