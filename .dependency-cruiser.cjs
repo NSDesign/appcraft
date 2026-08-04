@@ -16,20 +16,32 @@ module.exports = {
     {
       name: "kernel-dependency-free",
       comment:
-        "kernel-dependency-free: the kernel must not import store, surfaces, controls, or any runtime library.",
+        "kernel-dependency-free: the kernel must not import store, surfaces, controls, or any runtime library. Tests are exempt — the constraint is on what the kernel ships, and a test needs a runner. A kernel test importing the store would still be caught, because vitest is the only exemption.",
       severity: "error",
-      from: { path: "^src/appcraft/kernel" },
+      from: { path: "^src/appcraft/kernel", pathNot: "\\.test\\.tsx?$" },
       to: {
-        pathNot:
-          "^(src/appcraft/kernel|node_modules/(typescript|tslib))",
+        pathNot: "^(src/appcraft/kernel|node_modules/(typescript|tslib))",
       },
     },
     {
+      name: "kernel-tests-use-no-runtime-libs",
+      comment:
+        "The exemption above is narrow: kernel tests may import a test runner and the kernel, nothing else.",
+      severity: "error",
+      from: { path: "^src/appcraft/kernel/.*\\.test\\.tsx?$" },
+      to: {
+        pathNot: "^(src/appcraft/kernel|node_modules/(vitest|@vitest|typescript|tslib|chai|@types))",
+      },
+    },
+    {
+      // NOTE the trailing slash. "^src/app" also matches src/appcraft, so the
+      // original pattern forbade the framework from importing its own internals —
+      // invisible until real code existed, then it failed every kernel module.
       name: "app-uses-public-api-only",
       comment:
         "facade-owns-state: product code imports the appcraft public entry, never internals.",
       severity: "error",
-      from: { path: "^src/app" },
+      from: { path: "^src/app/" },
       to: { path: "^src/appcraft/(kernel|store|schema|surfaces|controls)/" },
     },
     {
@@ -37,7 +49,7 @@ module.exports = {
       comment:
         "facade-owns-state: Zod, Jotai and Immer must not leak into product code.",
       severity: "error",
-      from: { path: "^src/app" },
+      from: { path: "^src/app/" },
       to: { dependencyTypes: ["npm"], path: "^(jotai|immer|zod)" },
     },
     {

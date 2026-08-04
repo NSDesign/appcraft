@@ -82,6 +82,35 @@ Append one block per implementation pass, **before** editing.
       touches no code.
 ```
 
+```yaml
+- pass: field-scale-kernel
+  routes: [kernel, enforcement, docs]
+  docs_read:
+    - AGENTS.md
+    - docs/design/appcraft-core-architecture.md
+    - docs/decision-contract.md
+    - docs/verification.md
+  tier: 3
+  tier_reason: >
+    The projection envelope, retention, three-way field classification and eviction —
+    the spine every later scale reuses. Tier 3 by the table: kernel, retention,
+    eviction. Not tier 4 because the public entry point is not yet declared and no
+    dependency changes; the kernel stays dependency-free. Routes widened mid-pass from
+    [kernel] to include enforcement and docs: the first real code exposed two bugs in
+    .dependency-cruiser.cjs that blocked the pass, and check:preflight caught the
+    understated declaration rather than letting it through.
+  run:
+    - npm run test:unit
+    - npm run verify:quick
+    - npm test
+  skip:
+    - >
+      The twelve fixture-dependent browser specs. This pass proves the kernel, not a
+      rendered surface; src/app still has no entry point. Retention and eviction are
+      proven at unit level here and remain unproven in a session until the fixture app
+      lands.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -287,3 +316,72 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
     answered. If the token surface moves across minors, themes built today may render
     differently later; recording the Astryx version in `docs/style-guide.md` is a
     cheap hedge that does not remove the risk.
+
+### Field-scale kernel — the projection envelope
+
+- **Result:** the spine exists. `src/appcraft/kernel` implements the retention
+  envelope, the three-way field classification, eviction, materialisation,
+  persistence and export — dependency-free, pure, and covered by 25 unit tests.
+  - `projection.ts` — `createProjection`, `select`, `readActive`, `readBranch`,
+    `writeActive`, `materialise`, `evictDerived`, the composed `activate`,
+    `toPersistable`, `toExport`.
+  - `field-class.ts` — document / authored-inactive / derived, with the
+    classification typed as `{ [Field in keyof S]-?: FieldClass }` so an unclassified
+    field is a compile error rather than a silent retention bug.
+  - `styled-mode-field.test.ts` — the re-declaration the design document names as
+    field-scale validation. Toolcraft's version resets on mode change; here retention
+    is not implemented at all, it falls out of `select` never deleting.
+- **Rules applied:** `retain-inactive-branches`, `evict-derived-state`,
+  `field-classification-required`, `export-active-projection-only`,
+  `inactive-branches-not-validated`, `envelope-versioned`,
+  `panel-discriminant-persists`, `kernel-dependency-free`, `app-agnostic-core`,
+  `facade-owns-state`, `verification-tier-preclassified`, `evidence-over-assertion`.
+- **Rejected alternatives:**
+  - *Building eviction into `select`.* Convenient, but it would fuse the retention
+    claim to the eviction claim so neither could be tested without the other. `select`
+    stays minimal and `activate` composes the transition.
+  - *Mutating the envelope in place.* Undo history holds references to prior
+    envelopes; mutating one rewrites the past. Every operation returns a new envelope.
+  - *A `StyledModeField` fixture module in `src/appcraft`.* `app-agnostic-core` forbids
+    app-specific code in the framework. It lives inside the test file, where a fixture
+    exercises the framework rather than sourcing requirements for it.
+  - *Implementing the open-projection operations now.* `add`/`remove`/`reorder`/
+    `filter` are collection scale. `order` is present in the envelope type because it
+    is the same envelope, but the operations arrive with the scale that needs them —
+    staged validation, not fragmented abstraction.
+  - *Declaring the kernel done at 25 green tests.* A suite that cannot fail proves
+    nothing, so the invariants were mutation-tested (below).
+- **Enforcement bugs found by the first real code:** `.dependency-cruiser.cjs` had two
+  defects that were invisible while `src/` was empty.
+  1. `app-uses-public-api-only` matched `^src/app`, which also matches
+     `src/appcraft` — the rule forbade the framework from importing its own internals
+     and failed every kernel module. Fixed to `^src/app/`.
+  2. `kernel-dependency-free` failed kernel *tests* for importing vitest. The
+     constraint belongs on what the kernel ships, not on its tests, so tests are
+     exempt — and a companion rule `kernel-tests-use-no-runtime-libs` keeps the
+     exemption narrow enough that a test importing the store is still caught.
+- **Evidence:**
+  - `npm run test:unit` — 25 passed across 3 files.
+  - **Mutation tests**, each reverted after: making `select` delete other branches
+    (the Toolcraft bug) fails 7 tests including both retention tests and four of the
+    five StyledModeField tests; making `evictDerived` a no-op fails 4; making
+    `toExport` leak the envelope fails 2. Each mutation is caught by exactly the tests
+    that claim to cover it.
+  - **Boundary probes**, each reverted: a kernel module importing the store, a kernel
+    test importing the store, and product code reaching into kernel internals are all
+    still rejected after the rule fixes.
+  - `npm run check:boundaries` — no violations, 20 modules, 41 dependencies.
+  - `npm test` — exit 0.
+  - `check:preflight` rejected this pass's first attestation for declaring
+    `routes: [kernel]` while the boundary fix touched enforcement. The gate worked on
+    its author.
+- **Risks:**
+  - Retention and eviction are proven at unit level only. The browser specs that would
+    prove them in a session remain skipped — no fixture app renders yet, and a unit
+    test cannot show that the surface bound to a branch displays the retained value.
+  - `materialise` takes a `build` callback rather than reading a declared derived
+    spec. That is right for field scale and may not survive collection scale, where
+    building 500 branches' derived state on demand needs a declaration the engine can
+    schedule, not a callback the caller supplies.
+  - `toPersistable` drops `order` because closed projections do not use it. Collection
+    scale must revisit that line, or reordering will not survive a reload.
