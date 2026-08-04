@@ -23,6 +23,15 @@ export default defineConfig({
     ...devices["Desktop Chrome"],
     baseURL,
     trace: "retain-on-failure",
+    /*
+      Honour a browser the environment already provides. CI images and sandboxes often
+      ship a Chromium whose build number does not match the pinned Playwright, and the
+      default failure ("run npx playwright install") is a download the machine may not
+      be allowed to make. Set APPCRAFT_CHROMIUM to the executable to use it instead.
+    */
+    ...(process.env["APPCRAFT_CHROMIUM"]
+      ? { launchOptions: { executablePath: process.env["APPCRAFT_CHROMIUM"] } }
+      : {}),
   },
   ...(hasFixtureApp()
     ? {

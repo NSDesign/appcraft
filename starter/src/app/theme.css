@@ -1,0 +1,130 @@
+/*
+  Theme tokens.
+
+  Product code reads these; it never hard-codes a colour, family or size
+  (`theme-tokens-not-literals`). They are appcraft-owned today. When the style-guide
+  route runs, `astryx theme build` replaces this file's values with the compiled theme
+  and nothing above it changes — which is the whole point of reading tokens.
+*/
+:root {
+  --color-background: #f9fafe;
+  --color-background-surface: #ffffff;
+  --color-border: #dfe2ea;
+  --color-text-primary: #1e1f22;
+  --color-text-secondary: #6b7280;
+  --color-accent: #5b6cff;
+  --color-on-accent: #ffffff;
+
+  --font-family-body: system-ui, sans-serif;
+  --font-family-heading: system-ui, sans-serif;
+
+  --text-body-size: 16px;
+  --text-caption-size: 13px;
+  --text-heading-4-size: 19px;
+
+  --radius-inner: 2px;
+  --radius-element: 4px;
+  --radius-container: 8px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0e0f12;
+    --color-background-surface: #16181d;
+    --color-border: #2a2e37;
+    --color-text-primary: #e6e8ec;
+    --color-text-secondary: #9aa1ad;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+  font-size: var(--text-body-size);
+}
+
+.ac-app { display: flex; flex-direction: column; min-height: 100vh; }
+
+.ac-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-background-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ac-title {
+  font-family: var(--font-family-heading);
+  font-size: var(--text-heading-4-size);
+  margin: 0;
+  margin-right: auto;
+}
+
+.ac-btn {
+  font: inherit;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-element);
+  background: var(--color-background-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.ac-btn-primary { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
+.ac-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+.ac-error {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  font-size: var(--text-caption-size);
+}
+
+.ac-body { display: grid; grid-template-columns: 200px 1fr 260px; flex: 1; }
+
+.ac-surface { padding: var(--space-3); background: var(--color-background-surface); }
+.ac-canvas { background: var(--color-background); display: grid; place-items: center; }
+.ac-inspector { border-left: 1px solid var(--color-border); display: flex; flex-direction: column; gap: var(--space-4); }
+.ac-master-detail { border-right: 1px solid var(--color-border); }
+.ac-tabbed-section { padding: 0; }
+
+.ac-projection { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.ac-discriminant { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+.ac-option {
+  font: inherit;
+  font-size: var(--text-caption-size);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-inner);
+  background: var(--color-background-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.ac-option[aria-selected="true"] { background: var(--color-accent); color: var(--color-on-accent); border-color: transparent; }
+
+.ac-branch { display: flex; flex-direction: column; gap: var(--space-1); }
+.ac-label { font-size: var(--text-caption-size); }
+.ac-derived { font-size: var(--text-caption-size); color: var(--color-text-secondary); }
+
+.ac-input {
+  font: inherit;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-element);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+.ac-product { font-size: var(--text-heading-4-size); }

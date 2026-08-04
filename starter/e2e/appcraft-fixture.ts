@@ -19,11 +19,20 @@ import { fileURLToPath } from "node:url";
  * has no parent repository to reach into. */
 export const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** Entry points that would make `src/app` a runnable fixture. */
-const fixtureEntryPoints = ["index.html", "src/app/main.tsx", "src/app/main.ts"];
+/**
+ * A runnable fixture needs the page **and** any one of the entry modules — not all of
+ * them. The first version of this used `.every`, which demanded `main.tsx` and
+ * `main.ts` simultaneously and therefore skipped the suite forever, reporting green.
+ * A gate that can only ever say "skip" is worse than no gate.
+ */
+const fixturePage = "index.html";
+const fixtureEntryPoints = ["src/app/main.tsx", "src/app/main.ts", "src/app/main.jsx"];
 
 export function hasFixtureApp(): boolean {
-  return fixtureEntryPoints.every((entry) => existsSync(join(projectRoot, entry)));
+  return (
+    existsSync(join(projectRoot, fixturePage)) &&
+    fixtureEntryPoints.some((entry) => existsSync(join(projectRoot, entry)))
+  );
 }
 
 export const fixtureSkipReason =

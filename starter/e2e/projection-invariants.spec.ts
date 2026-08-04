@@ -53,17 +53,21 @@ fixtureSuite(fixtureSuiteTitle("projection invariants"), () => {
     await selectProjectionBranch(page, modeField, "range");
     await writeProjectionBranchValue(page, modeField, "range", "7");
 
-    expect(
-      await readProjectionBranchValue(page, modeField, "fixed"),
-      "The fixed-mode value authored before the switch is authored-inactive state and must survive deactivation.",
-    ).toBe("42");
-
+    // An inactive branch has no DOM — that is eviction. Retention is observed by
+    // switching back, which is what a user does and what the invariant promises.
     await selectProjectionBranch(page, modeField, "fixed");
 
     expect(
       await readProjectionBranchValue(page, modeField, "fixed"),
       "Switching back must restore the authored value, not re-initialise the branch.",
     ).toBe("42");
+
+    await selectProjectionBranch(page, modeField, "range");
+
+    expect(
+      await readProjectionBranchValue(page, modeField, "range"),
+      "The other branch survived the round trip too; neither overwrote the other.",
+    ).toBe("7");
   });
 
   test("browser: derived state is evicted for inactive branches and rebuilt on activation", async ({
@@ -84,11 +88,17 @@ fixtureSuite(fixtureSuiteTitle("projection invariants"), () => {
 
     await selectProjectionBranch(page, modeField, "fixed");
 
+    // The half a session can actually prove: reactivation *rebuilds*. If activation
+    // failed to materialise, the marker would be missing rather than stale.
     const rebuiltMarkers = await readDerivedMarkers(page, modeField);
     expect(
       rebuiltMarkers.filter((marker) => marker.branchKey === "fixed"),
       "Reactivating a branch must rebuild its derived state.",
     ).toEqual(activeMarkers.filter((marker) => marker.branchKey === "fixed"));
+    expect(
+      rebuiltMarkers.length,
+      "A rebuild that produced nothing would pass an equality check against nothing.",
+    ).toBeGreaterThan(0);
   });
 
   test("browser: export reads the active projection only", async ({ page }) => {
@@ -188,7 +198,8 @@ fixtureSuite(fixtureSuiteTitle("projection invariants"), () => {
     await undo.click();
     expect(await readActiveBranchKey(page, modeField)).toBe("range");
 
-    // Second undo reverses the switch, and retention makes it lossless.
+    // Second undo reverses the switch itself, and retention makes it lossless: the
+    // fixed branch becomes active again carrying the value nobody re-entered.
     await undo.click();
     expect(await readActiveBranchKey(page, modeField)).toBe("fixed");
     expect(

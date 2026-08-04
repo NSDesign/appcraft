@@ -220,6 +220,32 @@ Append one block per implementation pass, **before** editing.
       extracted output rather than by screenshot.
 ```
 
+```yaml
+- pass: fixture-app
+  routes: [schema, store, surfaces, starter, enforcement, docs]
+  docs_read:
+    - AGENTS.md
+    - docs/design/appcraft-core-architecture.md
+    - docs/decision-contract.md
+    - docs/verification.md
+  tier: 4
+  tier_reason: >
+    Adds React and Vite, the store facade, the surface archetypes, and the app that
+    renders them — the first code that makes retention and eviction observable in a
+    session. Dependencies and architecture, so tier 4 by the table. This is also the
+    pass that turns twelve skipped specs into either passing or failing ones, which
+    changes what every previous green run meant.
+  run:
+    - npm run verify:quick
+    - npm run test:browser
+    - npm test
+  skip:
+    - >
+      Astryx and StyleX. The archetypes render through appcraft-owned CSS custom
+      properties so theme-tokens-not-literals holds today; swapping the token source to
+      Astryx is a controls-route pass with its own blast radius.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -765,3 +791,80 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
     decision. It catches omission, not evasion.
   - The eight properties are drawn from Astryx `0.1.8`. If the `defineTheme` surface
     moves, the picker and the skill drift together and nothing detects it.
+
+### Fixture app — the twelve skipped specs now run
+
+- **Result:** `starter/src/app` renders, and the browser suite is **19 passed, 0
+  skipped**. Retention, eviction's observable half, export scope, validation scope,
+  panel-discriminant persistence, envelope versioning, undo grouping and surface
+  composition are proven in a session rather than argued.
+  - `packages/core/src/store` — the facade. React state sits beneath it today; Jotai
+    lands here later and no surface, control or app changes, which is what a facade is
+    for.
+  - `packages/core/src/surfaces` — the four archetypes. **They** emit the
+    `data-appcraft-*` contract, not product code: attributes emitted by an app could be
+    forgotten or misspelled, and a suite asserting on them would be testing the app's
+    diligence rather than the framework's behaviour.
+  - `starter/src/app` — three projections at three scales from one kernel, plus
+    `theme.css` so `theme-tokens-not-literals` holds today.
+- **Rules applied:** `retain-inactive-branches`, `evict-derived-state`,
+  `export-active-projection-only`, `inactive-branches-not-validated`,
+  `panel-discriminant-persists`, `envelope-versioned`, `undo-switch-separate-entry`,
+  `surfaces-declared-not-composed`, `layout-archetypes-only`, `facade-owns-state`,
+  `field-classification-required`, `theme-tokens-not-literals`,
+  `evidence-over-assertion`, `app-agnostic-core`.
+- **The finding that matters: one browser test was proving nothing.** Mutation testing
+  in a real browser showed that making `evictDerived` a no-op leaves the **entire suite
+  green**. The reason is structural: an inactive branch renders nothing, so "no derived
+  output for an inactive branch" is trivially true in the DOM; and persistence strips
+  derived fields via `stripDerived`, a different function from `evictDerived`, so
+  storage stays clean too. In-memory eviction is a *memory* claim, and memory is not
+  browser-observable without instrumenting the app for its own tests.
+  The row's statement now says what the session actually proves — that activation
+  **rebuilds** — and points the non-retention half at the unit tests, where the envelope
+  can be inspected. The alternative was to keep a green row that meant nothing, which is
+  the exact failure `evidence-over-assertion` exists to name.
+- **Rejected alternatives:**
+  - *Instrumenting the app to expose retained derived state.* It would make the
+    eviction row green by adding a test-only surface to product code. A test that needs
+    the app to report on itself is measuring the report.
+  - *Persisting the field projection so an inactive branch is readable.* That changes
+    the app to suit the test. An inactive branch has no DOM by design; switching back is
+    how a user observes retention and is what the invariant claims.
+  - *Jotai now.* The facade exists so the swap is cheap later. Adding it in the same
+    pass as React, Vite, the archetypes and the app would have made a tier-4 change
+    larger with no verification benefit.
+  - *Astryx and StyleX now.* Same argument. The archetypes read appcraft-owned tokens,
+    so the token rule holds; swapping the source is a controls-route pass.
+  - *Raising the perf budgets silently.* They were guesses and both failed by ~2%.
+    They are now derived from observed runs (203 ms and 152 ms) with the measurement
+    method and its caveat written next to the number.
+- **Three defects found by making the specs actually run:**
+  1. `hasFixtureApp()` used `.every()` over the candidate entry points, so it demanded
+     `main.tsx` **and** `main.ts` simultaneously and could only ever skip. A gate that
+     can only say "skip" is worse than no gate; every previous green run was reporting
+     twelve skips it could never have retired.
+  2. `readProjectionBranchValue` called `inputValue()` on the branch container rather
+     than the field inside it — the same place `writeProjectionBranchValue` writes.
+  3. `select` collided between kernel and store on the public entry. The entry now
+     exports the store's, and the kernel's envelope primitives stay on the `/kernel`
+     subpath — the honest layering rather than a rename that reads oddly at its level.
+- **Evidence:**
+  - `npm run test:browser` — **19 passed, 0 skipped**, against a real Vite dev server.
+  - **Browser mutation tests**, each reverted: making `select` delete other branches
+    fails the retention spec in the browser; making `evictDerived` a no-op fails
+    nothing, which is the finding above.
+  - `npm test` — exit 0. 24 script tests, 16 CLI tests, 25 unit tests, 19 browser
+    tests, 53 modules with no boundary violations.
+- **Risks:**
+  - The suite needs `APPCRAFT_CHROMIUM` here, because the sandbox ships Chromium 1194
+    and the pinned Playwright wants 1234. The config honours the variable rather than
+    demanding a download the machine may not be allowed to make; on a normal machine
+    `npx playwright install` is the answer and the variable is unnecessary.
+  - The perf budgets include Playwright's locator resolution and click dispatch, so
+    they bound activation rather than measure it. They will need re-deriving on the
+    hardware anyone actually gates on.
+  - The store is React state, not Jotai. Undo history is unbounded and per-projection,
+    which is wrong for a real app — cross-projection grouping is a store-route pass.
+  - `theme.css` is hand-written appcraft tokens. Until `astryx theme build` writes it,
+    `theme-tokens-not-literals` is enforced against a token set nobody chose.

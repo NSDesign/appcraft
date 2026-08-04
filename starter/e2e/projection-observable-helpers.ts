@@ -86,9 +86,13 @@ export async function selectProjectionBranch(
 }
 
 /**
- * Read a branch's authored value. Reads the rendered branch when it is active and
- * the persisted envelope when it is not — which is precisely the retention claim:
- * an inactive branch has no DOM, and its value must still be there.
+ * Read a branch's authored value.
+ *
+ * An inactive branch has **no DOM** — that is eviction working, not a gap. So this
+ * reads the rendered branch when it is active, and the persisted envelope when the
+ * projection persists. For a transient projection there is no third option, and the
+ * honest browser proof of retention is to select the branch and read it: switching
+ * back is exactly what a user does, and what the invariant promises.
  */
 export async function readProjectionBranchValue(
   page: Page,
@@ -99,13 +103,29 @@ export async function readProjectionBranchValue(
   const branch = branchLocator(page, projection, branchKey);
 
   if ((await branch.count()) > 0) {
-    return branch.first().inputValue();
+    // The branch is a container; the value lives in the field inside it — the same
+    // place writeProjectionBranchValue writes to, so a read and a write cannot
+    // disagree about where a branch's value is.
+    const field = branch.first().locator("input, textarea, select").first();
+
+    if ((await field.count()) > 0) {
+      return field.inputValue();
+    }
+
+    return (await branch.first().innerText()).trim();
   }
 
   const envelope = await readPersistedEnvelope(page, projection, options);
-  const branches = envelope?.branches;
 
-  return branches ? branches[branchKey] : undefined;
+  if (envelope?.branches && branchKey in envelope.branches) {
+    return envelope.branches[branchKey];
+  }
+
+  throw new Error(
+    `Branch "${branchKey}" of "${projection.path}" is neither rendered nor persisted, so a ` +
+      `browser cannot observe it. Select the branch first — switching back is how a user ` +
+      `sees retained state, and is what the invariant actually claims.`,
+  );
 }
 
 /** Author a value into the active branch. Fails if the branch is not active. */
@@ -150,8 +170,18 @@ export async function readDerivedMarkers(
 }
 
 /**
- * Assert a branch holds no materialised derived state. Used both after
- * deactivation (eviction) and after reload (rebuild, never restore).
+ * Assert a branch holds no materialised derived state.
+ *
+ * **Read the limit before trusting this.** An inactive branch renders nothing, so the
+ * DOM half passes whether or not the kernel evicted anything — proven by mutation:
+ * making `evictDerived` a no-op leaves the whole browser suite green. Persistence does
+ * not close the gap either, because `toPersistable` strips derived fields through
+ * `stripDerived` independently of eviction.
+ *
+ * What this genuinely catches is a branch that renders derived output while inactive,
+ * and derived state reaching storage. In-memory eviction is a memory claim, and memory
+ * is not browser-observable without instrumenting the app for its own tests — so it is
+ * proven at unit level, where the envelope can be inspected directly.
  */
 export async function expectNoDerivedStateForBranch(
   page: Page,
