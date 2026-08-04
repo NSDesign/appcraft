@@ -43,6 +43,7 @@ Toolcraft's catalogue): if the rule is checkable *without* product knowledge it 
 | `transport-not-a-projection` | default | Playhead and transport evaluation is a derived sampler across branches, not a projection. Track and key structure are projections. |
 | `figma-structure-source-of-truth` | invariant | When a Figma URL is supplied, read node, layer, component, variant, text, variable, style, and asset structure via MCP. Never implement from a screenshot or by eye. |
 | `figma-variables-to-tokens` | default | Map Figma variables and styles onto StyleX theme tokens rather than literal values. |
+| `theme-tokens-not-literals` | invariant | Product code reads Astryx theme tokens. It does not hard-code colour, font-family or font-size values. Checkable without product knowledge, so invariant by this catalogue's own derivation test. |
 | `verification-tier-preclassified` | invariant | Classify the verification tier before editing, by blast radius rather than line count. |
 | `preflight-attested` | invariant | Write the preflight attestation before editing implementation files. |
 | `worklog-decision-trail` | invariant | Maintain a decision trail. Prose is context, not execution proof. |

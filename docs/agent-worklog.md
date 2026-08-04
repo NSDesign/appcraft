@@ -162,6 +162,35 @@ Append one block per implementation pass, **before** editing.
       skipped until pass 5 fills src/app.
 ```
 
+```yaml
+- pass: cli-scaffolder
+  routes: [starter, enforcement, docs]
+  docs_read:
+    - AGENTS.md
+    - docs/plans/scaffolder-and-style-guide.md
+    - docs/decision-contract.md
+    - docs/verification.md
+  tier: 4
+  tier_reason: >
+    Adds a second published package and the artefact users actually run. A generation
+    bug ships broken apps to every user, and the starter documents this pass adds are
+    what the generated contract routes agents to. Tier 4 by the table: public API,
+    architecture, dependencies, release.
+  run:
+    - npm run test:scripts
+    - npm run verify:quick
+    - npm test
+    - node packages/cli/bin/appcraft.mjs create <tmp> --yes --no-install
+  skip:
+    - >
+      The twelve fixture-dependent browser specs, unchanged: src/app still renders no
+      surface graph. The generated app inherits the same skip until pass 5.
+    - >
+      Publishing to npm. No credentials in this environment, and the scope is
+      unconfirmed. Generation is proven by running the CLI against a temporary
+      directory and asserting on the result instead.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -548,3 +577,82 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
   - `starter/AGENTS.md` points at `docs/appcraft/*.md` documents that do not exist.
     App-axis document validation is off by design, so the generated contract currently
     routes agents to files the starter does not carry. Pass 4 must ship them.
+
+### CLI scaffolder — `npx @nsdesign/appcraft create`
+
+- **Result:** the scaffolder exists and works. `packages/cli` publishes as
+  `@nsdesign/appcraft`, generating a standalone app that carries the contract, the
+  route documents, the skills, the e2e suite, and a fresh worklog.
+  - Transactional generation: staged in a sibling directory, validated, promoted by a
+    single rename. A failure leaves no target.
+  - `prepare-pack` copies `starter/` and `.agents/skills` into the package at pack
+    time, so a published template cannot drift from its source and nothing is authored
+    twice.
+  - The starter now ships the fourteen `docs/appcraft/*` documents its own contract
+    routes agents to, plus its own `decision-contract.md`.
+  - `check:starter-docs` asserts every app-axis routed document exists in the starter
+    and is not effectively empty — closing the gap left open in pass 3, where app-axis
+    document validation was off by design and nothing caught a dangling route.
+- **Rules applied:** `evidence-over-assertion`, `preflight-attested`,
+  `verification-tier-preclassified`, `worklog-decision-trail`, `app-agnostic-core`,
+  `astryx-before-custom-control` and `custom-control-justified` (both documented in
+  the starter's control-selection and custom-controls routes),
+  `transport-not-a-projection` (the timeline document states the split),
+  `theme-tokens-not-literals` (stated in the starter contract and the style-guide
+  document), `figma-structure-source-of-truth`.
+- **Four defects that only running the CLI could find.** The thirteen unit tests
+  passed while every one of these was live:
+  1. The generated `tsconfig.json` extended `../tsconfig.base.json`, which exists in
+     the monorepo and nowhere else. `npm run typecheck` failed immediately in a
+     generated app.
+  2. `e2e/appcraft-acceptance.spec.ts` read the decision contract from `repoRoot` —
+     the directory *above* the app. A generated app has no repository above it.
+  3. The manifest declared no `dev` script while the CLI told the user to run
+     `npm run dev`. A scaffolder whose first instruction fails has spent the user's
+     trust before they write a line.
+  4. The starter relied on workspace-hoisted `@types/node`, `typescript` and
+     `@playwright/test`; standalone, none resolved.
+  Each is fixed, and three new regression tests now assert the class of failure rather
+  than the instance: every printed `npm run <script>` must exist in the generated
+  manifest, the generated tsconfig must not `extend`, and the suite must not mention
+  `repoRoot`.
+- **Rejected alternatives:**
+  - *Depending on the `skills` npm package*, as Toolcraft does. Generation copies the
+    skills into `.agents/skills` unconditionally, and `--agent` shells out to `npx
+    skills add` only when asked. That removes a hard dependency and keeps the common
+    path working when the network does not.
+  - *Deleting the target directory under `--force`.* It merges instead, so a `.git`
+    directory and anything the user already had survive.
+  - *Caret-ranging the framework dependency.* `^0.1.0` permits `0.2.0`, and appcraft is
+    pre-1.0 where a minor may break. Pre-1.0 versions are pinned exactly; a test
+    asserts it.
+  - *Staging in the OS temp directory.* `rename` is atomic only within a filesystem,
+    and temp is often on another. Staging is a sibling of the target.
+  - *Printing `npm run dev` anyway and adding a stub script.* A script that starts
+    nothing is worse than not offering it. The CLI prints `npm run test`, which works.
+- **A fifth defect, caught by the worklog gate on this very entry.** The starter's new
+  contract states `theme-tokens-not-literals` as an invariant, and this pass relied on
+  it — but the rule had never been added to the framework's own catalogue.
+  `check:worklog` rejected the entry for citing an id the contract does not define.
+  The rule is now in `docs/decision-contract.md`, levelled invariant by the
+  catalogue's own derivation test: it is checkable without product knowledge.
+- **Evidence:**
+  - `node --test packages/cli/src/create.test.mjs` — 16 passed.
+  - **The CLI was run end to end**, not just unit-tested:
+    `node packages/cli/bin/appcraft.mjs create my-tool --yes --no-install` produced 37
+    files. `npm install` then `npm test` inside that generated app passed: 7 browser
+    meta-gates, 12 fixture-gated specs skipped — the same result the framework gets.
+  - `npm test` at the root — exit 0. 24 script tests, 16 CLI tests, 25 unit tests,
+    7 browser meta-gates, no boundary violations across 39 modules.
+- **Risks:**
+  - **A generated app cannot `npm install` today.** `@nsdesign/appcraft-core` is
+    unpublished, so the dependency 404s. The end-to-end run above only completed after
+    repointing that dependency at the local package. This is pass 7's work, not a
+    defect, but until then the CLI produces an app nobody else can install.
+  - `prepare-pack` has never run in a real `npm pack`. The packaged layout is asserted
+    by `resolveTemplateSources` and exercised only through the repo path; the packaged
+    path is untested until pass 7.
+  - The starter still renders no surface graph, so the twelve invariant specs skip in
+    every generated app exactly as they do here. A user's first `npm test` is green
+    with twelve invariants unproven, which the contract states but a hurried reader
+    will miss.

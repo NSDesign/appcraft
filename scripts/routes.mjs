@@ -94,6 +94,25 @@ export function validateRegistry(registry) {
   return problems;
 }
 
+/**
+ * Documents an axis's routes point at, deduplicated. App-axis documents live inside a
+ * generated app, so they are resolved against the starter rather than the repo root.
+ */
+export function routeDocuments(registry, axis) {
+  const documents = new Set();
+
+  for (const route of routesForAxis(registry, axis)) {
+    for (const field of ["plan", "implementation", "verification"]) {
+      const value = route[field];
+      if (typeof value === "string" && value.endsWith(".md")) {
+        documents.add(value);
+      }
+    }
+  }
+
+  return [...documents].sort();
+}
+
 export function routesForAxis(registry, axis) {
   return registry.routes.filter((route) => route.axis === axis);
 }

@@ -15,11 +15,9 @@ import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** The starter package root — this file lives in `starter/e2e`. */
+/** The app root. Everything the suite reads resolves from here — a generated app
+ * has no parent repository to reach into. */
 export const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-
-/** The monorepo root, where the contract and the decision catalogue live. */
-export const repoRoot = resolve(projectRoot, "..");
 
 /** Entry points that would make `src/app` a runnable fixture. */
 const fixtureEntryPoints = ["index.html", "src/app/main.tsx", "src/app/main.ts"];

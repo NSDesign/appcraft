@@ -111,6 +111,7 @@
       "verification": "docs/verification.md",
       "paths": [
         "^scripts/",
+        "^packages/cli/",
         "^starter/e2e/",
         "^\\.agents/",
         "^skills-lock\\.json$",
@@ -138,7 +139,9 @@
       "paths": [
         "^starter/src/",
         "^starter/AGENTS\\.md$",
-        "^starter/index\\.html$"
+        "^starter/index\\.html$",
+        "^starter/docs/",
+        "^starter/tsconfig\\.json$"
       ],
       "skills": [
         "writing-plans",
