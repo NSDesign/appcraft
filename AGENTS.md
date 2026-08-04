@@ -56,15 +56,28 @@ mismatch fails.
 
 ## Task routing
 
+Generated from `docs/routes.json` — the single route registry. Editing the table
+below has no effect: `npm run check:routes` regenerates and compares it, so the
+registry and this document cannot drift.
+
+**Framework routes** apply to work on appcraft itself, in this repository. A second
+axis, **application routes**, applies to work inside a generated app and is rendered
+into that app's own `AGENTS.md`; both live in the same registry.
+
+<!-- appcraft:routes:start -->
+<!-- Generated from docs/routes.json by scripts/generate-routes.mjs. Do not edit by hand. -->
+
 | Route id | Surface | Plan | Implementation | Verification |
 |---|---|---|---|---|
-| `kernel` | projection envelope, retention, eviction | `docs/design/appcraft-core-architecture.md` §1–5 | `docs/decision-contract.md` | `docs/verification.md` |
-| `schema` | composition schema, Zod integration, bindings | core-architecture §2, §7 | `docs/decision-contract.md` | `docs/verification.md` |
-| `store` | Jotai facade, undo grouping, persistence | core-architecture §2, §6 | `docs/decision-contract.md` | `docs/verification.md` |
-| `surfaces` | archetypes, layout, master-detail, tabs | core-architecture §7 | `docs/decision-contract.md` | `docs/verification.md` |
-| `controls` | Astryx binding layer, compound/variant controls | core-architecture §6 | `docs/decision-contract.md` | `docs/verification.md` |
-| `enforcement` | checkers, boundaries, receipts | `docs/design/appcraft-inheritance-delta-map.md` | `docs/decision-contract.md` | `docs/verification.md` |
-| `docs` | contract and design documents | — | — | `npm run check:docs` |
+| `kernel` | projection envelope, retention, eviction | docs/design/appcraft-core-architecture.md | docs/decision-contract.md | docs/verification.md |
+| `schema` | composition schema, Zod integration, bindings | docs/design/appcraft-core-architecture.md | docs/decision-contract.md | docs/verification.md |
+| `store` | Jotai facade, undo grouping, persistence | docs/design/appcraft-core-architecture.md | docs/decision-contract.md | docs/verification.md |
+| `surfaces` | archetypes, layout, master-detail, tabs | docs/design/appcraft-core-architecture.md | docs/decision-contract.md | docs/verification.md |
+| `controls` | Astryx binding layer, compound and variant controls | docs/design/appcraft-core-architecture.md | docs/decision-contract.md | docs/verification.md |
+| `enforcement` | checkers, boundaries, receipts, the e2e gate | docs/design/appcraft-inheritance-delta-map.md | docs/decision-contract.md | docs/verification.md |
+| `docs` | contract and design documents | — | — | npm run check:docs |
+
+<!-- appcraft:routes:end -->
 
 Use the smallest route set covering the changed surface.
 

@@ -111,6 +111,32 @@ Append one block per implementation pass, **before** editing.
       lands.
 ```
 
+```yaml
+- pass: route-registry
+  routes: [enforcement, docs]
+  docs_read:
+    - AGENTS.md
+    - docs/design/appcraft-inheritance-delta-map.md
+    - docs/decision-contract.md
+    - docs/plans/scaffolder-and-style-guide.md
+  tier: 2
+  tier_reason: >
+    One registry becomes the source for the AGENTS.md routing table and for
+    check:preflight's route matching, which currently hardcodes its own path patterns.
+    Blast radius is the gate: getting the registry wrong mis-routes every later pass.
+    Not tier 3 — no kernel, retention or eviction code is touched.
+  run:
+    - npm run check:routes
+    - npm run verify:quick
+    - npm test
+  skip:
+    - >
+      The twelve fixture-dependent browser specs, unchanged: no fixture app renders yet.
+    - >
+      Existence checks for the app-axis routes' documents. They are paths inside a
+      generated app, and the starter does not exist until pass 3.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -385,3 +411,52 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
     schedule, not a callback the caller supplies.
   - `toPersistable` drops `order` because closed projections do not use it. Collection
     scale must revisit that line, or reordering will not survive a reload.
+
+### Route registry — one source for the tables and the checkers
+
+- **Result:** `docs/routes.json` is the single route registry, and the `AGENTS.md`
+  routing table is now **generated** from it rather than maintained beside it.
+  - `scripts/routes.mjs` — load, validate, match changed files to routes, render.
+  - `scripts/generate-routes.mjs` — `npm run check:routes` compares, `routes:generate`
+    rewrites. Editing the table by hand has no effect and fails the gate.
+  - `scripts/check-preflight.mjs` now reads its route-to-path mapping from the
+    registry; it previously held a literal copy, which was the same drift the registry
+    exists to remove. It also rejects an attestation naming a route the registry does
+    not define — a typo that would otherwise read as extra diligence.
+  - **Two axes.** Seven *framework* routes (work on appcraft, matched by file path)
+    and twelve *application* routes (work inside a generated app, matched by intent).
+    The framework axis alone could never route "build me an app that…", which is the
+    first thing a user types after `create`.
+- **Rules applied:** `preflight-attested`, `verification-tier-preclassified`,
+  `evidence-over-assertion`, `worklog-decision-trail`, `app-agnostic-core`
+  (app-axis routes describe product work and carry no framework paths),
+  `transport-not-a-projection` (the timeline route names the split explicitly).
+- **Rejected alternatives:**
+  - *Detecting drift instead of generating.* The delta map is specific: generate, so
+    drift is impossible rather than merely reported. A detector still permits a window
+    where the two disagree and someone reads the wrong one.
+  - *One flat route list.* Framework and application routes answer different questions
+    — "which part of appcraft" versus "what kind of product work". Flattening them
+    would put `kernel` and `debugging` in one table and make the smallest-covering-set
+    rule meaningless.
+  - *Giving app-axis routes file patterns too.* Their files live in a generated app,
+    not here. A pattern that matched nothing would look like coverage.
+  - *Generating the starter's table now.* The starter does not exist until pass 3. The
+    registry carries the app axis ready; the generator gains a second target then.
+- **Evidence:**
+  - `node --test scripts/routes.test.mjs` — 13 passed, including that
+    `src/appcraft/schema/…` routes to `schema` and not to an `src/app` prefix match,
+    the bug that broke the boundary rules in the previous pass.
+  - **Gate probes**, each reverted: a hand-edited table fails `check:routes`; a
+    registry edit without regeneration fails; a registry pointing at a missing
+    document fails validation; an attestation naming `kernal` fails `check:preflight`.
+  - `npm test` — exit 0. 23 script tests, 25 unit tests, 7 browser meta-gates.
+- **Risks:**
+  - The twelve app-axis routes are proposed from the delta map's task table, not mined
+    from observed agent behaviour. Phase two should revise them from real failures;
+    the registry makes that a data edit rather than a documentation exercise.
+  - App-axis routes point at documents (`docs/appcraft/*.md`) that do not exist yet.
+    Validation is deliberately disabled for that axis, so a wrong path there will not
+    be caught until the starter carries those files.
+  - `check:routes` covers `AGENTS.md` only. When the starter arrives it must be added
+    to `targets`, or its table can drift silently.

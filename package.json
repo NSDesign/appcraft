@@ -10,10 +10,12 @@
     "lint": "eslint .",
     "check:boundaries": "depcruise src e2e --config .dependency-cruiser.cjs",
     "check:projection-graph": "node scripts/check-projection-graph.mjs",
+    "check:routes": "node scripts/generate-routes.mjs",
     "check:docs": "node scripts/check-contract-docs.mjs",
     "check:worklog": "node scripts/check-worklog.mjs",
     "check:preflight": "node scripts/check-preflight.mjs",
     "check:skills": "node scripts/check-skills.mjs",
+    "routes:generate": "node scripts/generate-routes.mjs --write",
     "skills:lock": "node scripts/check-skills.mjs --write",
     "test:scripts": "node --test scripts/*.test.mjs",
     "test:unit": "vitest run",
@@ -22,7 +24,7 @@
     "verify:quick": "npm run typecheck && npm run lint && npm run check:boundaries && npm run check:projection-graph && npm run test:scripts && npm run test:unit",
     "verify:ui": "npm run test:browser",
     "verify:perf": "npm run test:browser:perf",
-    "verify:final": "npm run check:skills && npm run check:docs && npm run check:worklog && npm run check:preflight && npm run verify:quick && npm run test:browser",
+    "verify:final": "npm run check:skills && npm run check:routes && npm run check:docs && npm run check:worklog && npm run check:preflight && npm run verify:quick && npm run test:browser",
     "test": "npm run verify:final"
   },
   "devDependencies": {

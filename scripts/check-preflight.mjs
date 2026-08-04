@@ -10,19 +10,18 @@
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 
-const ROUTE_PATHS = {
-  kernel: /^src\/appcraft\/kernel\//,
-  schema: /^src\/appcraft\/schema\//,
-  store: /^src\/appcraft\/store\//,
-  surfaces: /^src\/appcraft\/surfaces\//,
-  controls: /^src\/appcraft\/controls\//,
-  // Verification surfaces are enforcement: a change to e2e, to the skills, or to a
-  // build config changes what the gate proves, which is the blast radius that
-  // matters.
-  enforcement:
-    /^(scripts\/|e2e\/|\.agents\/|skills-lock\.json|\.dependency-cruiser|eslint|vitest|playwright|package\.json|tsconfig)/,
-  docs: /^(docs\/|AGENTS\.md|README\.md)/,
-};
+import { loadRegistry, requiredRoutes } from "./routes.mjs";
+
+// Route-to-path mapping comes from docs/routes.json, not from a copy kept here.
+// It used to be a literal in this file, which is precisely the drift the delta map
+// asks for a single registry to design out.
+let registry;
+try {
+  registry = loadRegistry();
+} catch (error) {
+  console.error(`check:preflight FAILED — ${error.message}`);
+  process.exit(1);
+}
 
 let worklog;
 try {
@@ -78,9 +77,18 @@ try {
   process.exit(0);
 }
 
-const required = Object.entries(ROUTE_PATHS)
-  .filter(([, re]) => changed.some((f) => re.test(f)))
-  .map(([route]) => route);
+const required = requiredRoutes(registry, changed);
+
+// A declared route that no registry route defines is a typo, and would otherwise
+// look like diligence: the attestation names more routes, so it reads as safer.
+const known = new Set(registry.routes.map((route) => route.id));
+const unknown = declared.filter((route) => !known.has(route));
+if (unknown.length) {
+  console.error(
+    `check:preflight FAILED — attestation declares routes not in docs/routes.json: ${unknown.join(", ")}`,
+  );
+  process.exit(1);
+}
 
 const missing = required.filter((r) => !declared.includes(r));
 if (missing.length) {
