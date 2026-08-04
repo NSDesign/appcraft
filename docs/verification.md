@@ -24,17 +24,17 @@ move one tier higher — not automatically to the full gate.
 
 | Command | Checks |
 |---|---|
-| `npm run typecheck` | TypeScript, strict, across `src`, `e2e`, `scripts` |
+| `npm run typecheck` | TypeScript, strict, across `scripts`, `packages/core`, and `starter` |
 | `npm run lint` | ESLint plus `eslint-plugin-boundaries` element and external rules |
-| `npm run check:boundaries` | dependency-cruiser over the **module** graph of `src` and `e2e` |
+| `npm run check:boundaries` | dependency-cruiser over the **module** graph of `packages` and `starter` |
 | `npm run check:projection-graph` | The **projection reference** graph is acyclic; reports the shortest cycle |
 | `npm run check:docs` | `AGENTS.md` and the decision contract have not drifted |
 | `npm run check:worklog` | The latest decision-trail entry is complete, evidenced, and cites real rule ids |
 | `npm run check:preflight` | The latest worklog attestation names a tier and matches the changed files |
 | `npm run check:skills` | `.agents/skills` present and content-locked against `skills-lock.json` |
 | `npm run test:scripts` | `node --test` over the checker unit tests |
-| `npm run test:unit` | Vitest over `src` |
-| `npm run test:browser` | Playwright over `e2e` |
+| `npm run test:unit` | Vitest over `packages/*/src` |
+| `npm run test:browser` | Playwright over `starter/e2e`, run in the starter workspace |
 | `npm run test:browser:perf` | The `browser perf:` scenarios only, single worker |
 | `npm run verify:quick` | typecheck, lint, boundaries, unit |
 | `npm run verify:final` | skills, docs, preflight, `verify:quick`, browser |
@@ -63,22 +63,26 @@ The split matters, because most retention bugs pass a unit test.
   what a user experiences across time, and only a session can discharge them.
 
 Assigning an invariant to the wrong layer is how coverage becomes theatre. The
-acceptance matrix in `e2e/appcraft-acceptance.ts` records the assignment, and
-`e2e/appcraft-acceptance.spec.ts` rejects a row that claims a statically-checked
+acceptance matrix in `starter/e2e/appcraft-acceptance.ts` records the assignment, and
+`starter/e2e/appcraft-acceptance.spec.ts` rejects a row that claims a statically-checked
 invariant as browser coverage.
 
 ## The browser suite
 
+The suite lives in `starter/e2e`, because proving retention in a session needs an app
+to render it — and because every generated app should carry these specs rather than
+trust that the framework was tested once elsewhere.
+
 ```
-e2e/appcraft-acceptance.ts             the acceptance and performance matrices
-e2e/appcraft-acceptance.spec.ts        the meta-gate over those matrices
-e2e/appcraft-fixture.ts                fixture detection and the DOM contract
-e2e/projection-observable-helpers.ts   retention, eviction, export, validation, persistence
-e2e/surface-graph-helpers.ts           declared archetypes, master-detail, canvas discipline
-e2e/performance-helpers.ts             frame probe, interaction measurement, budgets
-e2e/projection-invariants.spec.ts      the Δ1 invariants in a session
-e2e/surface-composition.spec.ts        the surface graph is the declaration
-e2e/app-performance.spec.ts            activation and switch budgets
+starter/e2e/appcraft-acceptance.ts             the acceptance and performance matrices
+starter/e2e/appcraft-acceptance.spec.ts        the meta-gate over those matrices
+starter/e2e/appcraft-fixture.ts                fixture detection and the DOM contract
+starter/e2e/projection-observable-helpers.ts   retention, eviction, export, validation, persistence
+starter/e2e/surface-graph-helpers.ts           declared archetypes, master-detail, canvas discipline
+starter/e2e/performance-helpers.ts             frame probe, interaction measurement, budgets
+starter/e2e/projection-invariants.spec.ts      the Δ1 invariants in a session
+starter/e2e/surface-composition.spec.ts        the surface graph is the declaration
+starter/e2e/app-performance.spec.ts            activation and switch budgets
 ```
 
 ### The acceptance matrix
@@ -97,7 +101,7 @@ about *how* the invariant was proven.
 
 The design is frozen ahead of the implementation, so the browser suite exists before
 the app it drives. Specs needing a live page are skipped as a whole suite until
-`src/app` provides an entry point, and Playwright's `webServer` is declared only when
+`starter/src/app` provides an entry point, and Playwright's `webServer` is declared only when
 that entry point exists.
 
 **A skipped suite is not coverage.** It is reported as skipped, titled as skipped, and
@@ -122,7 +126,7 @@ Browser tests observe through attributes the framework emits, never through inte
 
 Because surfaces are declared, these attributes come from the framework rather than
 from product code, which is what makes them safe to assert on. `check:boundaries`
-forbids `e2e` from importing framework internals so this stays true.
+forbids `starter/e2e` from importing framework internals so this stays true.
 
 ## Skills
 

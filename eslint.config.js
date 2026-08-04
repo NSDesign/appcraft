@@ -28,15 +28,15 @@ export default tseslint.config(
     files: ["**/*.{ts,tsx}"],
     plugins: { boundaries },
     settings: {
-      "boundaries/include": ["src/**/*", "e2e/**/*"],
+      "boundaries/include": ["packages/**/*", "starter/**/*"],
       "boundaries/elements": [
-        { type: "kernel", pattern: "src/appcraft/kernel/**/*" },
-        { type: "schema", pattern: "src/appcraft/schema/**/*" },
-        { type: "store", pattern: "src/appcraft/store/**/*" },
-        { type: "surfaces", pattern: "src/appcraft/surfaces/**/*" },
-        { type: "controls", pattern: "src/appcraft/controls/**/*" },
-        { type: "app", pattern: "src/app/**/*" },
-        { type: "e2e", pattern: "e2e/**/*" },
+        { type: "kernel", pattern: "packages/core/src/kernel/**/*" },
+        { type: "schema", pattern: "packages/core/src/schema/**/*" },
+        { type: "store", pattern: "packages/core/src/store/**/*" },
+        { type: "surfaces", pattern: "packages/core/src/surfaces/**/*" },
+        { type: "controls", pattern: "packages/core/src/controls/**/*" },
+        { type: "app", pattern: "starter/src/app/**/*" },
+        { type: "e2e", pattern: "starter/e2e/**/*" },
       ],
     },
     rules: {

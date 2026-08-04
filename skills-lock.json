@@ -5,12 +5,12 @@
     "brainstorming": {
       "source": ".agents/skills/brainstorming/SKILL.md",
       "sourceType": "repo",
-      "contentHash": "f80285bb14ef2a619c5f87bd23c8a2053fed053d67d26f0393e748d281934f98"
+      "contentHash": "005eb798610a5610d8759dbcc2c00862fcaaa89d299930ec50ea8a599d44b23a"
     },
     "browser": {
       "source": ".agents/skills/browser/SKILL.md",
       "sourceType": "repo",
-      "contentHash": "89215efa4a48f97b6db3e0b237cbf962cb322f398656265d067d3a5bdca272a4"
+      "contentHash": "965f0bf32fd69415b11ef3ee1e6183f4c788897d51551a692bb9c0751467599e"
     },
     "figma": {
       "source": ".agents/skills/figma/SKILL.md",
@@ -20,7 +20,7 @@
     "figma-implement-design": {
       "source": ".agents/skills/figma-implement-design/SKILL.md",
       "sourceType": "repo",
-      "contentHash": "1f35fbcf6ec4b10e29ca0da5a924dd0f7d717b1ff8a9b226e5dcdc95c3dfbae0"
+      "contentHash": "217ee7d758031bda9db507c3ba96953ed5e1c1a6782f7da01eeaa4dcc336e351"
     },
     "projection-modeling": {
       "source": ".agents/skills/projection-modeling/SKILL.md",
@@ -35,7 +35,7 @@
     "writing-plans": {
       "source": ".agents/skills/writing-plans/SKILL.md",
       "sourceType": "repo",
-      "contentHash": "0629661f28b34e8b342c782dc4ed83983f4b0eddb88c207f3595161ccc4739ae"
+      "contentHash": "c04378ad01a4c41138e95407e73141c30843ef26970efa18a8637869201e8640"
     }
   }
 }

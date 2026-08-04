@@ -75,6 +75,7 @@ into that app's own `AGENTS.md`; both live in the same registry.
 | `surfaces` | archetypes, layout, master-detail, tabs | docs/design/appcraft-core-architecture.md | docs/decision-contract.md | docs/verification.md |
 | `controls` | Astryx binding layer, compound and variant controls | docs/design/appcraft-core-architecture.md | docs/decision-contract.md | docs/verification.md |
 | `enforcement` | checkers, boundaries, receipts, the e2e gate | docs/design/appcraft-inheritance-delta-map.md | docs/decision-contract.md | docs/verification.md |
+| `starter` | the generated app skeleton and its fixture surfaces | docs/plans/scaffolder-and-style-guide.md | docs/decision-contract.md | docs/verification.md |
 | `docs` | contract and design documents | — | — | npm run check:docs |
 
 <!-- appcraft:routes:end -->
@@ -104,7 +105,7 @@ Use the smallest route set covering the changed surface.
    passing on an empty graph.
 8. **Panel-scale discriminants persist.** Reopening an app restores the last active
    tab/tool; derived state still rebuilds.
-9. **The kernel has no dependencies.** `src/appcraft/kernel` must not import the
+9. **The kernel has no dependencies.** `packages/core/src/kernel` must not import the
    store, surfaces, controls, Astryx, Jotai, or React.
 
 ## Scope litmus test
@@ -118,30 +119,45 @@ different app need something else here?**
 - **No → it is core.** The projection primitive passes: every app needs it
   identically.
 
-Nothing in `src/appcraft` may be specific to any single application. ShapeStudio and
+Nothing in `packages/core/src` may be specific to any single application. ShapeStudio and
 similar apps are test fixtures that exercise the framework, never sources of core
 requirements.
 
 ## Repository structure
 
+An npm-workspaces monorepo. The framework is a published library; the starter is
+the app the CLI generates, and doubles as the framework's fixture.
+
 ```
-src/appcraft/kernel/     projection envelope + operations (dependency-free)
-src/appcraft/schema/     composition schema, Zod variant integration
-src/appcraft/store/      Jotai facade, undo grouping, persistence
-src/appcraft/surfaces/   layout archetypes
-src/appcraft/controls/   Astryx binding layer
-src/app/                 demo/fixture app surface
-e2e/                     Playwright suite, acceptance matrix, DOM contract
+packages/core/           @nsdesign/appcraft-core — the framework library
+  src/kernel/            projection envelope + operations (dependency-free)
+  src/schema/            composition schema, Zod variant integration
+  src/store/             Jotai facade, undo grouping, persistence
+  src/surfaces/          layout archetypes
+  src/controls/          Astryx binding layer
+  src/index.ts           the public entry product code imports
+packages/cli/            @nsdesign/appcraft — the scaffolder (pass 4)
+starter/                 the generated app skeleton, and the framework's fixture
+  AGENTS.md              the app contract, app-axis routes generated into it
+  src/app/               product surface
+  e2e/                   Playwright suite, acceptance matrix, DOM contract
 .agents/skills/          workflow skills, content-locked by skills-lock.json
+docs/routes.json         the single route registry
 docs/design/             authoritative design documents
-docs/                    contract, decision contract, verification, worklog
+docs/                    contract, decision contract, verification, plans, worklog
 scripts/                 checkers
 ```
 
+**Two published packages, two names.** `@nsdesign/appcraft` is the CLI — what a user
+types (`npx @nsdesign/appcraft create`). `@nsdesign/appcraft-core` is the library a
+generated app imports. The same split Astryx uses for `@astryxdesign/cli` and
+`@astryxdesign/core`, and for the same reason: the thing you run and the thing you
+depend on have different release cadences.
+
 Boundary rules are enforced by `dependency-cruiser` and `eslint-plugin-boundaries`;
-see `.dependency-cruiser.cjs` and `eslint.config.js`. `e2e` observes behaviour through
-the DOM contract in `e2e/appcraft-fixture.ts` and is forbidden from importing
-framework internals.
+see `.dependency-cruiser.cjs` and `eslint.config.js`. `starter/e2e` observes behaviour
+through the DOM contract in `starter/e2e/appcraft-fixture.ts` and is forbidden from
+importing framework internals.
 
 ## Skills
 
@@ -171,10 +187,10 @@ uncertain, move one tier higher — not automatically to the full gate.
 Retention, eviction, export scope, validation scope, and panel-discriminant
 persistence are **session-observable**: a unit test proves the kernel semantics, and
 only `npm run test:browser` proves the surface bound to a branch behaves that way. The
-acceptance matrix in `e2e/appcraft-acceptance.ts` records which layer discharges which
+acceptance matrix in `starter/e2e/appcraft-acceptance.ts` records which layer discharges which
 invariant, and `docs/verification.md` explains what each layer can and cannot prove.
 
-The browser suite skips its fixture-dependent specs until `src/app` renders a surface
+The browser suite skips its fixture-dependent specs until `starter/src/app` renders a surface
 graph. A skipped suite is reported as skipped and belongs in the attestation's `skip`
 list; it is never counted as coverage.
 

@@ -1,0 +1,16 @@
+{
+  "name": "appcraft-starter",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The app skeleton `npx @nsdesign/appcraft create` generates. Also the framework's fixture: the Δ1 invariants are proven in a session here.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:browser": "playwright test",
+    "test:browser:perf": "playwright test --grep \"browser perf:\" --workers=1"
+  },
+  "dependencies": {
+    "@nsdesign/appcraft-core": "*"
+  }
+}

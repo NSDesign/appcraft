@@ -19,7 +19,7 @@ persistence, or export.
    - confirm derived output rebuilds on activation rather than persisting;
    - reload the page and confirm the active tab or tool is restored;
    - export and confirm no inactive branch appears in the output.
-4. Run `npm run test:browser` for the Playwright suite in `e2e/`.
+4. Run `npm run test:browser` for the Playwright suite in `starter/e2e/`.
 5. For final delivery, run the commands required by the tier in `AGENTS.md`.
 
 ## appcraft Rule

@@ -32,7 +32,7 @@ bindings, actions })`. Do not recreate panels, regions, inspectors, tab bars, or
 collection lists by hand: surfaces are declared, never hand-composed
 (`surfaces-declared-not-composed`).
 
-Nothing entering `src/appcraft` may be specific to the app being built. Apply the
+Nothing entering `packages/core/src` may be specific to the app being built. Apply the
 scope litmus test to every extraction — if a different app would need something else
 there, it belongs to the app or to an optional starter kit, consumed through the
 controls route.

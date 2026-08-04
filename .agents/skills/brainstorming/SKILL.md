@@ -24,7 +24,7 @@ fixture app that exercises them.
 5. Decide whether the projection is **closed** (keys fixed by schema) or **open**
    (keys from data, so `order` plus add/remove/reorder/filter apply).
 6. Apply the scope litmus test — *would a different app need something else here?*
-   Yes means it is a seam belonging to an app or starter kit, not to `src/appcraft`.
+   Yes means it is a seam belonging to an app or starter kit, not to `packages/core/src`.
 7. Choose the verification tier before planning, and record decisions plus rejected
    alternatives in `docs/agent-worklog.md`.
 

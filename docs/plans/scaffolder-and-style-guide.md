@@ -66,9 +66,10 @@ it.
 ```
 appcraft/
   packages/
-    appcraft/            the framework — today's src/appcraft
+    core/                @nsdesign/appcraft-core — the framework library
       src/{kernel,schema,store,surfaces,controls}
-    cli/                 published as @nsdesign/appcraft
+      src/index.ts       the public entry product code imports
+    cli/                 published as @nsdesign/appcraft — the scaffolder
       bin/appcraft.mjs
       bin/create-appcraft-app.mjs
       src/*.mjs
@@ -82,13 +83,19 @@ appcraft/
   scripts/               the checkers
 ```
 
-**Single source of truth, in both directions.** `prepare-pack.mjs` copies
-`packages/appcraft/src` → `templates/appcraft`, `starter/` → `templates/starter`,
-and `.agents/skills` → `appcraft-skills/`. Nothing is authored twice. A
-`check:pack-parity` script asserts the copy is current so a stale template cannot
-publish.
+**Single source of truth, in both directions.** `prepare-pack.mjs` copies `starter/`
+→ `templates/starter` and `.agents/skills` → `appcraft-skills/`. Nothing is authored
+twice, and a `check:pack-parity` script asserts the copy is current so a stale
+template cannot publish.
 
-**Migration cost.** Today's `src/appcraft` → `packages/appcraft/src`; today's
+**The framework is depended on, not copied.** Unlike Toolcraft, which vendors 264
+runtime files plus 184 UI files into every generated app, the starter carries a
+`@nsdesign/appcraft-core` dependency. That is what makes `templates/ui` unnecessary
+and keeps generated apps upgradeable rather than forked. The cost is that there is no
+copied source to sign, so integrity signing stays a phase-two decision — and
+vendoring later is still open, while un-vendoring would not be.
+
+**Migration cost (done, pass 3).** `src/appcraft` → `packages/core/src`;
 `src/app`, `e2e`, and the generated-app half of `docs/` → `starter/`. The checkers
 and design docs stay at the root. `.dependency-cruiser.cjs`, `eslint.config.js`,
 `tsconfig.json`, `vitest.config.ts` and `playwright.config.ts` need their paths

@@ -1,14 +1,14 @@
 {
-  "name": "appcraft",
+  "name": "appcraft-monorepo",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Agent-oriented framework for complex applications. Extends the Toolcraft methodology; built on Astryx and StyleX.",
+  "description": "The appcraft monorepo: the framework library, the CLI, and the starter it generates.",
   "license": "MIT",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p packages/core && tsc --noEmit -p starter",
     "lint": "eslint .",
-    "check:boundaries": "depcruise src e2e --config .dependency-cruiser.cjs",
+    "check:boundaries": "depcruise packages starter --config .dependency-cruiser.cjs",
     "check:projection-graph": "node scripts/check-projection-graph.mjs",
     "check:routes": "node scripts/generate-routes.mjs",
     "check:docs": "node scripts/check-contract-docs.mjs",
@@ -19,8 +19,8 @@
     "skills:lock": "node scripts/check-skills.mjs --write",
     "test:scripts": "node --test scripts/*.test.mjs",
     "test:unit": "vitest run",
-    "test:browser": "playwright test",
-    "test:browser:perf": "playwright test --grep \"browser perf:\" --workers=1",
+    "test:browser": "npm run test:browser -w appcraft-starter",
+    "test:browser:perf": "npm run test:browser:perf -w appcraft-starter",
     "verify:quick": "npm run typecheck && npm run lint && npm run check:boundaries && npm run check:projection-graph && npm run test:scripts && npm run test:unit",
     "verify:ui": "npm run test:browser",
     "verify:perf": "npm run test:browser:perf",
@@ -37,5 +37,9 @@
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^2.0.0"
-  }
+  },
+  "workspaces": [
+    "packages/*",
+    "starter"
+  ]
 }

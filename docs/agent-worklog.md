@@ -137,6 +137,31 @@ Append one block per implementation pass, **before** editing.
       generated app, and the starter does not exist until pass 3.
 ```
 
+```yaml
+- pass: monorepo-restructure
+  routes: [kernel, schema, store, surfaces, controls, starter, enforcement, docs]
+  docs_read:
+    - AGENTS.md
+    - docs/plans/scaffolder-and-style-guide.md
+    - docs/decision-contract.md
+    - docs/verification.md
+  tier: 4
+  tier_reason: >
+    Architecture and dependency change. Every path in every config moves, the package
+    boundary between the published library and the generated app is drawn for the
+    first time, and npm workspaces are introduced. Tier 4 by the table: architecture
+    and dependencies. Full gate. Every framework route is declared because every one of
+    them moved: check:preflight rejected a narrower declaration listing only kernel.
+  run:
+    - npm run verify:quick
+    - npm test
+  skip:
+    - >
+      The twelve fixture-dependent browser specs, unchanged: the starter now exists as
+      a package but still renders no surface graph. They move with the suite and stay
+      skipped until pass 5 fills src/app.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -460,3 +485,66 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
     be caught until the starter carries those files.
   - `check:routes` covers `AGENTS.md` only. When the starter arrives it must be added
     to `targets`, or its table can drift silently.
+
+### Monorepo restructure — the publisher shape
+
+- **Result:** the repository is now an npm-workspaces monorepo, and the package
+  boundary between the published library and the generated app is drawn.
+  - `packages/core` — `@nsdesign/appcraft-core`, the framework library, with
+    `src/index.ts` as the public entry product code imports.
+  - `starter/` — the app the CLI will generate, carrying its own `AGENTS.md`,
+    `package.json`, `playwright.config.ts`, `src/app`, and the `e2e` suite.
+  - Root — workspaces, the checkers, the design documents, and `tsconfig.base.json`
+    shared by both packages.
+  - `starter/AGENTS.md` renders the **application** route axis from the same registry
+    that renders the framework axis into the root contract, closing the risk recorded
+    last pass that `check:routes` covered one document only.
+- **Two published names, decided this pass.** `@nsdesign/appcraft` is the CLI — what a
+  user types. `@nsdesign/appcraft-core` is the library a generated app imports. The
+  plan had used one name for both, which cannot work. The split mirrors
+  `@astryxdesign/cli` and `@astryxdesign/core`, and for the same reason: the thing you
+  run and the thing you depend on release on different cadences.
+- **Rules applied:** `app-agnostic-core` (the framework package holds nothing
+  app-specific; the starter holds nothing framework-specific), `facade-owns-state`
+  (`src/index.ts` is the entry, and the boundary rules enforce it),
+  `kernel-dependency-free`, `verification-tier-preclassified`,
+  `evidence-over-assertion`, `preflight-attested`.
+- **Rejected alternatives:**
+  - *Copying the framework source into every generated app*, as Toolcraft does with
+    its 264-file runtime and 184-file UI. It is what makes their integrity signing
+    possible, but it forks the framework into every app and Δ2's whole argument is
+    least-custom-code. The starter depends on a published package instead. If signing
+    is wanted later, vendoring is a decision we can still take; the reverse is not.
+  - *Keeping `e2e` at the root.* The Δ1 invariants are framework-level, but proving
+    them needs an app to render, and every generated app should carry the specs rather
+    than trust the framework was tested once elsewhere. The suite moved with the
+    starter; the root delegates through the workspace.
+  - *One `starter/` path pattern in the registry.* It would conflate product code with
+    the test suite — the same collision class as `src/app` matching `src/appcraft`.
+    `starter/src/` routes to `starter`, `starter/e2e/` to `enforcement`.
+  - *Per-package vitest and eslint configs.* One root config each covers both
+    packages. The starter keeps its own Playwright config because it must run
+    standalone once generated; nothing else must.
+- **Evidence:**
+  - `npm test` — exit 0 after the move. 24 script tests, 25 unit tests, 7 browser
+    meta-gates, 12 fixture-gated specs skipped, no boundary violations across 22
+    modules.
+  - `check:preflight` rejected the first attestation, which declared
+    `[kernel, enforcement, docs]`; a restructure touches every framework route and the
+    gate said so. Declaring all eight was the fix, not widening the checker.
+  - Route matching re-verified by hand after repointing:
+    `packages/core/src/kernel/…` → `kernel`, `starter/src/app/…` → `starter`,
+    `starter/e2e/…` → `enforcement`.
+  - The registry initially left `starter/src/app` matching **no** route, which
+    `check:preflight` would have read as "no route required" rather than as a gap. A
+    `starter` route was added.
+- **Risks:**
+  - `packages/cli` does not exist yet; the layout anticipates it. Pass 4 must confirm
+    that `prepare-pack` can assemble templates from `starter/` without a second copy
+    of anything.
+  - The starter declares `"@nsdesign/appcraft-core": "*"`, which the workspace
+    resolves locally. A published starter needs a real version range, and the CLI must
+    write it — a `*` escaping into a generated app would install nothing.
+  - `starter/AGENTS.md` points at `docs/appcraft/*.md` documents that do not exist.
+    App-axis document validation is off by design, so the generated contract currently
+    routes agents to files the starter does not carry. Pass 4 must ship them.

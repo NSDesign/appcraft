@@ -15,14 +15,14 @@ Write a concise implementation plan that names:
 1. **Routes.** Every task route from the `AGENTS.md` routing table that the change
    touches — `kernel`, `schema`, `store`, `surfaces`, `controls`, `enforcement`,
    `docs` — using the smallest set that covers the changed surface.
-2. **Files** under `src/appcraft/*`, `src/app`, `e2e`, `scripts`, or `docs`.
+2. **Files** under `packages/core/src/*`, `starter/src/app`, `starter/e2e`, `scripts`, or `docs`.
 3. **Projection model.** Which discriminants change, whether each projection is
    closed or open, and the class of every field the change adds or moves.
 4. **Envelope impact.** Whether the persisted shape changes; if so, the `version`
    bump and the forward-only migration.
 5. **Coverage** required by the selected tier: unit suites, the retention and
    eviction suites for tier 3, and the `e2e` specs named in
-   `e2e/appcraft-acceptance.ts` for anything that renders.
+   `starter/e2e/appcraft-acceptance.ts` for anything that renders.
 6. **Commands** to run before completion.
 
 ## appcraft Rule

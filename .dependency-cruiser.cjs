@@ -18,9 +18,9 @@ module.exports = {
       comment:
         "kernel-dependency-free: the kernel must not import store, surfaces, controls, or any runtime library. Tests are exempt — the constraint is on what the kernel ships, and a test needs a runner. A kernel test importing the store would still be caught, because vitest is the only exemption.",
       severity: "error",
-      from: { path: "^src/appcraft/kernel", pathNot: "\\.test\\.tsx?$" },
+      from: { path: "^packages/core/src/kernel", pathNot: "\\.test\\.tsx?$" },
       to: {
-        pathNot: "^(src/appcraft/kernel|node_modules/(typescript|tslib))",
+        pathNot: "^(packages/core/src/kernel|node_modules/(typescript|tslib))",
       },
     },
     {
@@ -28,9 +28,9 @@ module.exports = {
       comment:
         "The exemption above is narrow: kernel tests may import a test runner and the kernel, nothing else.",
       severity: "error",
-      from: { path: "^src/appcraft/kernel/.*\\.test\\.tsx?$" },
+      from: { path: "^packages/core/src/kernel/.*\\.test\\.tsx?$" },
       to: {
-        pathNot: "^(src/appcraft/kernel|node_modules/(vitest|@vitest|typescript|tslib|chai|@types))",
+        pathNot: "^(packages/core/src/kernel|node_modules/(vitest|@vitest|typescript|tslib|chai|@types))",
       },
     },
     {
@@ -41,31 +41,31 @@ module.exports = {
       comment:
         "facade-owns-state: product code imports the appcraft public entry, never internals.",
       severity: "error",
-      from: { path: "^src/app/" },
-      to: { path: "^src/appcraft/(kernel|store|schema|surfaces|controls)/" },
+      from: { path: "^starter/src/app/" },
+      to: { path: "^packages/core/src/(kernel|store|schema|surfaces|controls)/" },
     },
     {
       name: "no-state-libs-in-product",
       comment:
         "facade-owns-state: Zod, Jotai and Immer must not leak into product code.",
       severity: "error",
-      from: { path: "^src/app/" },
+      from: { path: "^starter/src/app/" },
       to: { dependencyTypes: ["npm"], path: "^(jotai|immer|zod)" },
     },
     {
       name: "schema-not-depend-on-surfaces",
       comment: "Schema is declarative; it must not depend on rendering surfaces.",
       severity: "error",
-      from: { path: "^src/appcraft/schema" },
-      to: { path: "^src/appcraft/(surfaces|controls)" },
+      from: { path: "^packages/core/src/schema" },
+      to: { path: "^packages/core/src/(surfaces|controls)" },
     },
     {
       name: "e2e-uses-public-api-only",
       comment:
         "facade-owns-state: browser tests observe behaviour through the declared DOM contract and the public entry, never through framework internals. A test that reaches inside cannot prove an invariant a user could see.",
       severity: "error",
-      from: { path: "^e2e/" },
-      to: { path: "^src/appcraft/(kernel|store|schema|surfaces|controls)/" },
+      from: { path: "^starter/e2e/" },
+      to: { path: "^packages/core/src/(kernel|store|schema|surfaces|controls)/" },
     },
     {
       name: "no-orphans",

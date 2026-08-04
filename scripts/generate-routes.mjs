@@ -21,8 +21,18 @@ import {
   routesForAxis,
 } from "./routes.mjs";
 
-/** Documents that carry a generated block, and the axis each renders. */
-const targets = [{ axis: "framework", file: "AGENTS.md" }];
+/**
+ * Documents that carry a generated block, and the axis each renders.
+ *
+ * The starter's contract is the one a user actually reads after `create`, so it
+ * renders the application axis. Both come from the same registry — which is the
+ * point: two hand-maintained tables on two axes in two repositories is precisely the
+ * drift this exists to remove.
+ */
+const targets = [
+  { axis: "framework", file: "AGENTS.md" },
+  { axis: "app", file: "starter/AGENTS.md" },
+];
 
 let registry;
 try {

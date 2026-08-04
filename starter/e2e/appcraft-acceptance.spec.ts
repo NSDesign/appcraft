@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 
 import { appcraftAcceptance } from "./appcraft-acceptance";
-import { appcraftArchetypes, projectRoot } from "./appcraft-fixture";
+import { appcraftArchetypes, repoRoot } from "./appcraft-fixture";
 
 const currentFileName = basename(fileURLToPath(import.meta.url));
 const e2eDir = dirname(fileURLToPath(import.meta.url));
@@ -96,7 +96,7 @@ function findNamedTestSource(testName: string): { fileName: string; body: string
 }
 
 function readContractRuleIds(): string[] {
-  const contract = readFileSync(join(projectRoot, "docs/decision-contract.md"), "utf8");
+  const contract = readFileSync(join(repoRoot, "docs/decision-contract.md"), "utf8");
   const start = "appcraft-contract:decision-rule-list:start";
   const end = "appcraft-contract:decision-rule-list:end";
   const block = contract.slice(contract.indexOf(start) + start.length, contract.indexOf(end));
