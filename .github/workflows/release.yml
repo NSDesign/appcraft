@@ -1,0 +1,54 @@
+# Publishes @nsdesign/appcraft and @nsdesign/appcraft-core.
+#
+# Uses npm trusted publishing (OIDC) rather than a stored NPM_TOKEN: the job mints a
+# short-lived credential per run, and npm records provenance — which matters for a
+# package whose entire pitch is verifiability.
+#
+# Before the first run:
+#   1. Confirm the @nsdesign scope on npmjs.com (it matches the username, so it should
+#      already be yours).
+#   2. On each package's npm settings page, add a trusted publisher:
+#      repository NSDesign/appcraft, workflow .github/workflows/release.yml.
+#   3. Tag a release: git tag v0.1.0 && git push --tags
+#
+# The first publish of a scoped package needs --access public, which is set below.
+# Without it npm refuses and asks for a paid plan, which reads as a billing problem
+# rather than a flag you forgot.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # required for trusted publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - name: Install browsers for the verification gate
+        run: npx playwright install --with-deps chromium
+
+      # The gate runs before publishing, not after. A package that fails its own
+      # checks should never reach the registry.
+      - run: npm test
+
+      # Publish the library first: the CLI writes an exact dependency on it, so an app
+      # generated the moment the CLI lands must find a version that already exists.
+      - name: Publish @nsdesign/appcraft-core
+        run: npm publish --access public --provenance -w @nsdesign/appcraft-core
+
+      - name: Publish @nsdesign/appcraft
+        run: npm publish --access public --provenance -w @nsdesign/appcraft

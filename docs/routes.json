@@ -122,7 +122,8 @@
         "^package\\.json$",
         "^packages/[^/]+/package\\.json$",
         "^starter/package\\.json$",
-        "^tsconfig"
+        "^tsconfig",
+        "^\\.github/"
       ],
       "skills": [
         "systematic-debugging",

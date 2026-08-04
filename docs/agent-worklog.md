@@ -246,6 +246,29 @@ Append one block per implementation pass, **before** editing.
       Astryx is a controls-route pass with its own blast radius.
 ```
 
+```yaml
+- pass: release-readiness
+  routes: [enforcement, docs]
+  docs_read:
+    - docs/plans/scaffolder-and-style-guide.md
+    - AGENTS.md
+    - docs/verification.md
+  tier: 4
+  tier_reason: >
+    Release. Versions, licence, the packaged layout, and the workflow that publishes
+    it. Tier 4 by the table, and the first pass whose output is consumed by people
+    outside this repository.
+  run:
+    - npm pack -w @nsdesign/appcraft -w @nsdesign/appcraft-core
+    - node <packed-cli>/bin/appcraft.mjs create <tmp> --yes --no-install
+    - npm test
+  skip:
+    - >
+      npm publish itself. This environment has no npm credentials and the @nsdesign
+      scope is unconfirmed. Everything up to the publish command is done and verified;
+      the command is the owner's to run.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -868,3 +891,79 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
     which is wrong for a real app — cross-projection grouping is a store-route pass.
   - `theme.css` is hand-written appcraft tokens. Until `astryx theme build` writes it,
     `theme-tokens-not-literals` is enforced against a token set nobody chose.
+
+### Release readiness — 0.1.0, a licence, and the packaged layout
+
+- **Result:** Both packages carry `0.1.0`, an MIT `LICENSE`, and repository metadata;
+  `npm pack` produces tarballs that generate a working app on a machine with no
+  checkout; and `.github/workflows/release.yml` publishes them through npm trusted
+  publishing (OIDC) after the gate passes. What remains is the publish command itself,
+  which this environment cannot run.
+  - `LICENSE` at root and copied into both packages. `package.json` and both READMEs
+    had claimed MIT with no licence file anywhere — a claim about redistribution
+    rights with nothing behind it, which is the same defect class as an unverifiable
+    enforcement claim, in a place where it has legal weight.
+  - `@nsdesign/appcraft` and `@nsdesign/appcraft-core` at `0.1.0`, each with
+    `repository`, `homepage` and `bugs` pointing at `NSDesign/appcraft`, so a reader
+    on npmjs.com can reach the source that produced the tarball.
+  - The workflow runs `npm test` **before** either publish, and publishes core before
+    the CLI, because a generated app pins core exactly and would otherwise resolve a
+    version that does not exist yet.
+- **Rules applied:** `evidence-over-assertion`, `verification-tier-preclassified`,
+  `preflight-attested`, `worklog-decision-trail`, `app-agnostic-core`.
+- **The finding that matters: the repo layout was load-bearing and nothing said so.**
+  `resolveCoreVersion` read `packages/core/package.json` relative to the starter. That
+  path exists in a checkout and **never** in a published tarball, so every unit test
+  passed while the shipped CLI would have failed on its first real `npm create` — with
+  a message about a version it could not determine, on the one code path no test had
+  ever exercised. It surfaced the moment a real `npm pack` was run, and only then.
+  The function now branches on `sources.source`: `packaged` answers with the CLI's own
+  version, which is truthful because the two packages release together and needs
+  nothing outside the tarball; `repo` keeps reading the library manifest so a checkout
+  still generates against local source. The regression test asserts the packaged branch
+  when it is running from a tarball and, from a checkout, asserts that the branch has a
+  real version to fall back on — the strongest claim each layout can actually make.
+- **Rejected alternatives:**
+  - *Stored `NPM_TOKEN` in Actions secrets.* A long-lived credential with publish
+    rights, readable by any workflow change that lands on the default branch. Trusted
+    publishing mints a short-lived token per run against a publisher the owner
+    configures on npmjs.com, and produces provenance the tarball can be checked
+    against.
+  - *`npm publish` without the gate.* A release workflow that does not re-run the
+    checks publishes whatever the tag pointed at. The gate is cheap and the failure it
+    prevents is unrecoverable — a bad version number cannot be unpublished after 72
+    hours.
+  - *Caret ranges for the generated app's core dependency.* Kept exact, per
+    `coreVersionRange`: `^0.1.0` admits `0.2.0`, and pre-1.0 minors are where the
+    envelope shape will move.
+  - *Deleting the MIT claims instead of adding the file.* The licence is the intent;
+    the missing file was the defect. Removing the claim would have resolved the
+    inconsistency by making the package less usable.
+  - *Trusting `npm pack --dry-run`.* It lists filenames. It cannot show that a packed
+    CLI resolves paths correctly once installed, which is exactly what was broken.
+- **Evidence:**
+  - `npm pack -w @nsdesign/appcraft -w @nsdesign/appcraft-core` — the CLI tarball ships
+    37 starter template files, 8 skills, and `.gitignore` packed as `gitignore` (npm
+    silently renames a real `.gitignore` out of a tarball; `prepare-pack-templates.mjs`
+    works around it and `copyDirectory` restores the name on generation).
+  - Installing the packed CLI into a clean directory and running
+    `node <installed>/bin/appcraft.mjs create <tmp> --yes --no-install` — **46 files**,
+    core pinned to `0.1.0` exactly, `.gitignore` restored, 8 skills, style-guide picker
+    and fixture app present. This is the run that found the defect above.
+  - `npm test` — **exit 0**: 24 script tests, 17 CLI tests, 25 unit tests, 19 browser
+    tests, ESLint and dependency-cruiser clean over 53 modules.
+- **Risks:**
+  - **The publish has not happened and cannot happen here.** `npm whoami` returns
+    `ENEEDAUTH`; there are no credentials in this environment. The owner must confirm
+    the `@nsdesign` scope exists on npmjs.com and configure a trusted publisher for
+    each package (repository `NSDesign/appcraft`, workflow `release.yml`) before the
+    workflow can succeed. Until that is done, everything here is verified up to the
+    last step and unverified at it.
+  - The `packaged` branch answers with the CLI's version, which is only correct while
+    the two packages are released in lockstep. The workflow enforces that today by
+    publishing both from one tag; decoupling them later breaks the assumption silently.
+  - `0.1.0` is a first number, not a stability claim. The envelope shape, the archetype
+    set, and the store facade are all pre-1.0 and expected to move.
+  - The workflow has never run. It is written against the documented OIDC flow and its
+    steps are individually verified locally, but the publish job itself is unexercised
+    until the first tag.

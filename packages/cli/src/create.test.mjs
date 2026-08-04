@@ -168,6 +168,35 @@ test("the generated app is standalone — nothing reaches outside its own direct
   });
 });
 
+test("the packaged layout resolves a core version without the monorepo", async () => {
+  // The first real `npm pack` run failed here: resolveCoreVersion looked for
+  // packages/core/package.json, which exists in a checkout and never in the tarball.
+  // Nothing in the repo path could have caught it.
+  const { resolveTemplateSources } = await import("./paths.mjs");
+  const sources = resolveTemplateSources();
+
+  if (sources.source === "packaged") {
+    await withTempDir(async (dir) => {
+      const result = await generateAppcraftApp({ cwd: dir, name: "packaged", targetDir: "packaged" });
+      const manifest = JSON.parse(
+        await fs.readFile(path.join(result.targetDir, "package.json"), "utf8"),
+      );
+      assert.match(manifest.dependencies["@nsdesign/appcraft-core"], /^\d+\.\d+\.\d+/);
+    });
+    return;
+  }
+
+  // Running from a checkout: assert the packaged branch has a source of truth to read.
+  const manifest = JSON.parse(
+    await fs.readFile(new URL("../package.json", import.meta.url), "utf8"),
+  );
+  assert.match(
+    manifest.version,
+    /^\d+\.\d+\.\d+/,
+    "The packaged branch falls back to the CLI's own version, so it must be a real one.",
+  );
+});
+
 test("the app's worklog is fresh, not the framework's history", async () => {
   await withTempDir(async (dir) => {
     const result = await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "demo" });

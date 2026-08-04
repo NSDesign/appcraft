@@ -1,6 +1,6 @@
 {
   "name": "@nsdesign/appcraft-core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The appcraft framework: the projection kernel, composition schema, store facade, surface archetypes, and Astryx control bindings.",
   "license": "MIT",
   "type": "module",
@@ -9,6 +9,7 @@
     "./kernel": "./src/kernel/index.ts"
   },
   "files": [
+    "LICENSE",
     "src"
   ],
   "publishConfig": {
@@ -19,5 +20,14 @@
   },
   "peerDependencies": {
     "react": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NSDesign/appcraft.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/NSDesign/appcraft#readme",
+  "bugs": {
+    "url": "https://github.com/NSDesign/appcraft/issues"
   }
 }

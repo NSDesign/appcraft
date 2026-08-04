@@ -23,6 +23,7 @@ import {
 import {
   GITIGNORE_PACKED_NAME,
   excludedFromGeneration,
+  packageRoot,
   resolveTemplateSources,
 } from "./paths.mjs";
 
@@ -155,10 +156,26 @@ async function mergeInto(stagingDir, targetDir) {
   await copyDirectory(stagingDir, targetDir);
 }
 
-/** The framework version a generated app should depend on. */
+/**
+ * The framework version a generated app should depend on.
+ *
+ * The two layouts answer this differently, and conflating them is why the first
+ * packaged run failed: `packages/core/package.json` exists in a checkout and never in
+ * the published tarball.
+ *
+ *   packaged  the CLI's own version — the two packages are released together, so it is
+ *             the truthful answer and needs nothing outside the tarball
+ *   repo      the library's manifest, so a checkout generates against local source
+ */
 async function resolveCoreVersion(sources) {
-  // Published: the CLI and the library are released together, so the CLI's own
-  // version is the truthful answer. In-repo: read the library's manifest.
+  if (sources.source === "packaged") {
+    const manifest = await readJson(path.join(packageRoot, "package.json"));
+
+    if (manifest.version) {
+      return manifest.version;
+    }
+  }
+
   const candidates = [
     path.resolve(sources.starter, "../packages/core/package.json"),
     path.resolve(sources.starter, "../../packages/core/package.json"),
