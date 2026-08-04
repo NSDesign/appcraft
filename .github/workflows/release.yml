@@ -4,14 +4,28 @@
 # short-lived credential per run, and npm records provenance — which matters for a
 # package whose entire pitch is verifiability.
 #
-# Before the first run:
-#   1. Confirm the @nsdesign scope on npmjs.com (it matches the username, so it should
-#      already be yours).
-#   2. On each package's npm settings page, add a trusted publisher:
-#      repository NSDesign/appcraft, workflow .github/workflows/release.yml.
-#   3. Tag a release: git tag v0.1.0 && git push --tags
+# This workflow CANNOT perform the first publish of either package. npm requires a
+# trusted publisher's package to already exist on the registry — "Package must exist:
+# The package you're configuring must already exist on the npm registry"
+# (docs/lib/content/commands/npm-trust.md). OIDC therefore cannot bootstrap a new name,
+# and the first version of each package must be published manually.
 #
-# The first publish of a scoped package needs --access public, which is set below.
+# Before the first run:
+#   1. Enable account-level 2FA on npmjs.com. Trusted publishing requires it, and
+#      granular access tokens with the bypass-2FA option are not accepted.
+#   2. Publish 0.1.0 of each package once, by hand, from a logged-in machine:
+#        npm publish --access public -w @nsdesign/appcraft-core
+#        npm publish --access public -w @nsdesign/appcraft
+#   3. On each package's npm settings page, add a trusted publisher:
+#      organization/user NSDesign, repository appcraft, workflow `release.yml`
+#      (the filename, not the path), and grant it publish.
+#   4. Bump the version, then tag: git tag v0.1.1 && git push --tags
+#
+# The @nsdesign scope needs no organization: "When you sign up for an npm user account
+# or create an organization, you are granted a scope that matches your user or
+# organization name."
+#
+# Scoped packages are private by default, so every publish here passes --access public.
 # Without it npm refuses and asks for a paid plan, which reads as a billing problem
 # rather than a flag you forgot.
 name: release
@@ -35,6 +49,13 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+
+      # Node 22 bundles npm 10.9.x, and OIDC publishing needs npm >= 11.5.1. Without
+      # this the publish steps fail at the last moment, having already run the gate.
+      - name: Upgrade npm to a version that can publish over OIDC
+        run: |
+          npm install -g npm@latest
+          npm --version
 
       - run: npm ci
 
