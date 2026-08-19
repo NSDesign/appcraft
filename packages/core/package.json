@@ -10,7 +10,9 @@
   },
   "files": [
     "LICENSE",
-    "src"
+    "src",
+    "!src/**/.gitkeep",
+    "!src/**/*.test.ts"
   ],
   "publishConfig": {
     "access": "public"
