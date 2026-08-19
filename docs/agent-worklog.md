@@ -269,6 +269,30 @@ Append one block per implementation pass, **before** editing.
       the command is the owner's to run.
 ```
 
+```yaml
+- pass: gitkeep-placeholders
+  routes: [kernel, store, surfaces, controls, schema, starter, docs, enforcement]
+  docs_read:
+    - AGENTS.md
+    - docs/verification.md
+    - docs/routes.json
+  tier: 4
+  tier_reason: >
+    Started as tier 0 — deleting stale .gitkeep placeholders and rewriting two of
+    them. Verifying that they stopped shipping exposed a packaging defect, so the
+    pass now adds a postpack step and a regression test. Packaging lifecycle is
+    release surface, and the earlier tier-0 classification no longer described the
+    blast radius.
+  run:
+    - npm test
+    - node packages/cli/bin/appcraft.mjs create <tmp> --yes --no-install
+    - npm pack -w @nsdesign/appcraft -w @nsdesign/appcraft-core
+  skip:
+    - >
+      Nothing. The tier was raised mid-pass rather than keeping the cheaper one that
+      was written before the defect was known.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -967,3 +991,63 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
   - The workflow has never run. It is written against the documented OIDC flow and its
     steps are individually verified locally, but the publish job itself is unexercised
     until the first tag.
+
+### Placeholder files, and the stale-template shadow they exposed
+
+- **Result:** Generated apps are 45 files instead of 46 — no `.gitkeep` reaches a
+  user. Four stale placeholders are deleted from the framework, two genuinely-empty
+  directories keep theirs with an accurate note, and a `postpack` step stops the
+  packaging staging directory from shadowing the real starter in a checkout.
+  - Deleted: `packages/core/src/{kernel,store,surfaces}/.gitkeep` and
+    `starter/src/app/.gitkeep`. A `.gitkeep` holds an empty directory in git; all four
+    directories now hold real source, so the files were dead weight that outlived
+    their reason.
+  - Kept and rewritten: `packages/core/src/{controls,schema}/.gitkeep`. Both
+    directories are genuinely empty and referenced by `eslint.config.js`,
+    `.dependency-cruiser.cjs` and `docs/routes.json`, so they must exist. Each file
+    now says what is reserved for it and why nothing has been written yet, and points
+    at the enforced rules rather than restating them.
+- **Rules applied:** `evidence-over-assertion`, `verification-tier-preclassified`,
+  `preflight-attested`, `worklog-decision-trail`, `custom-control-justified`.
+- **The finding that matters: a stale staging directory silently shadowed the
+  starter.** `resolveTemplateSources()` checks `packages/cli/templates/starter`
+  **before** `starter/`, so any checkout that had run `npm pack` generated from a copy
+  frozen at that moment. Deleting `starter/src/app/.gitkeep` therefore changed nothing
+  observable: the CLI kept emitting it, from a copy nobody knew was being read. It was
+  caught only by generating an app to check the deletion had worked, rather than
+  trusting that removing a file removes it. `postpack` now clears the staging after the
+  tarball is written, restoring the layout `paths.mjs` documents as "in-repo".
+- **Rejected alternatives:**
+  - *Reversing the resolution order to prefer `starter/`.* It would fix the checkout
+    and risk the published case: `repoRoot` is `packageRoot/../..`, which for an
+    installed package is `node_modules`. A stray `node_modules/starter` would then win
+    over the real templates. Cleaning up after packing has no such edge.
+  - *Adding `#TODO` comments to the placeholders, as asked.* Right instinct, wrong
+    mechanism here: nothing parses a `.gitkeep`, so a TODO in one is an unverifiable
+    claim of exactly the kind this contract exists to eliminate. The two remaining
+    files state what is reserved; the *checkable* half is the regression test.
+  - *Deleting the empty `controls` and `schema` directories entirely.* Three configs
+    name them as boundary elements. Removing them would leave those rules matching
+    nothing while still appearing to enforce something.
+  - *Fixing the placeholder without a test.* It had already survived one deletion.
+- **Evidence:**
+  - `node packages/cli/bin/appcraft.mjs create <tmp> --yes --no-install` — 45 files,
+    zero `.gitkeep`, down from 46 with one.
+  - **Mutation test on the new regression test**, reverted after: recreating the stale
+    staging directory with a `.gitkeep` in it makes `no .gitkeep placeholder reaches a
+    generated app` fail (`not ok 11`), and removing it makes all 17 pass. The test
+    fails for the reason it claims to.
+  - `npm test` — exit 0: 24 script tests, 17 CLI tests, 25 unit tests, 19 browser
+    tests, lint and boundaries clean.
+  - `check:preflight` rejected this pass twice — first for omitting the `docs` route,
+    then the `enforcement` route — and the tier was raised 0 → 4 mid-pass once the
+    packaging defect turned a comment edit into a release-surface change.
+- **Risks:**
+  - The resolution order in `paths.mjs` is unchanged, so the shadowing is prevented
+    rather than made impossible. A checkout whose `npm pack` was interrupted between
+    `prepack` and `postpack` still has stale staging, and nothing warns. Making
+    `resolveTemplateSources` report which layout it chose would surface it.
+  - The `controls` and `schema` notes describe intent, and intent drifts. They are
+    prose, not gates; only the directories' existence is enforced.
+  - The tarballs built before this pass ship the placeholder. They are superseded, not
+    broken — but they must not be the ones published.

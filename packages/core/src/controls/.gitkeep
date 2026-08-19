@@ -1,3 +1,17 @@
-# controls
+# controls — reserved, deliberately empty
 
-See AGENTS.md for boundary rules governing this directory.
+This directory is empty on purpose, and this file exists only because git tracks
+files rather than directories. It is not an unfinished source file.
+
+Nothing has been written here yet because of Δ2: appcraft does not author a control
+library. Controls come from Astryx, and what eventually lands here is the thin
+adaptation layer — binding Astryx components to the projection facade — not
+primitives of our own. Authoring a novel primitive instead requires the
+`custom-control-justified` escape hatch and stronger coverage.
+
+Governed by the `controls` route (docs/routes.json). The boundary rules that apply
+are enforced, not described: `boundaries/element-types` in eslint.config.js and the
+matching rules in .dependency-cruiser.cjs. Read those for the real constraints — a
+comment in this file could drift from them without anything noticing.
+
+Delete this file once real source lands here.

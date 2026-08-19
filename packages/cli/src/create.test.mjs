@@ -197,6 +197,30 @@ test("the packaged layout resolves a core version without the monorepo", async (
   );
 });
 
+test("no .gitkeep placeholder reaches a generated app", async () => {
+  // A .gitkeep exists to hold an empty directory in git. Once the directory has real
+  // files it is dead weight, and shipping one into every generated app hands the user
+  // a placeholder describing *our* fixture. This kept reappearing after it was deleted
+  // from the starter, because a stale packages/cli/templates left by `npm pack`
+  // shadows starter/ in resolveTemplateSources — which is what postpack now prevents.
+  await withTempDir(async (dir) => {
+    const result = await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "demo" });
+    const entries = await fs.readdir(result.targetDir, {
+      recursive: true,
+      withFileTypes: true,
+    });
+    const placeholders = entries
+      .filter((entry) => entry.isFile() && entry.name === ".gitkeep")
+      .map((entry) => path.relative(result.targetDir, path.join(entry.parentPath, entry.name)));
+
+    assert.deepEqual(
+      placeholders,
+      [],
+      `A generated app must carry no .gitkeep; found ${placeholders.join(", ")}`,
+    );
+  });
+});
+
 test("the app's worklog is fresh, not the framework's history", async () => {
   await withTempDir(async (dir) => {
     const result = await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "demo" });
