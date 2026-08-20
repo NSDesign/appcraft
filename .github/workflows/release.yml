@@ -13,9 +13,12 @@
 # Before the first run:
 #   1. Enable account-level 2FA on npmjs.com. Trusted publishing requires it, and
 #      granular access tokens with the bypass-2FA option are not accepted.
-#   2. Publish 0.1.0 of each package once, by hand, from a logged-in machine:
+#   2. Publish 0.1.0 of each package once, either by hand from a logged-in machine:
 #        npm publish --access public -w @nsdesign/appcraft-core
 #        npm publish --access public -w @nsdesign/appcraft
+#      or by running .github/workflows/bootstrap-publish.yml, which does the same
+#      with a short-lived token held in GitHub's secret store. Delete that workflow
+#      once it has run.
 #   3. On each package's npm settings page, add a trusted publisher:
 #      organization/user NSDesign, repository appcraft, workflow `release.yml`
 #      (the filename, not the path), and grant it publish.

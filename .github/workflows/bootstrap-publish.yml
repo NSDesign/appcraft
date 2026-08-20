@@ -1,0 +1,118 @@
+# ONE-SHOT BOOTSTRAP. Delete this file once it has run successfully.
+#
+# npm cannot publish a package that does not yet exist over OIDC — "Package must
+# exist: The package you're configuring must already exist on the npm registry"
+# (npm-trust.md). So the first version of each package needs a token, and this
+# workflow is the only place appcraft ever uses one.
+#
+# Why a workflow rather than a local publish: the token goes from npmjs.com straight
+# into GitHub's encrypted secret store. It is never pasted into a terminal, a chat, or
+# a file, and it is revocable the moment this finishes.
+#
+# ── Before running ────────────────────────────────────────────────────────────
+#
+#   1. npmjs.com → Access Tokens → Generate New Token → Granular Access Token
+#        - Packages and scopes: Read and write
+#        - Scopes: @nsdesign
+#        - Bypass 2FA: ENABLED (a CI job cannot answer a 2FA prompt)
+#        - Expiration: the shortest offered — this token has one job
+#   2. GitHub → this repo → Settings → Secrets and variables → Actions
+#        - New repository secret, name: NPM_TOKEN
+#   3. Actions → "bootstrap publish (one-shot)" → Run workflow
+#        - Type `publish 0.1.0` into the confirm box
+#
+# ── Immediately after it succeeds ─────────────────────────────────────────────
+#
+#   1. npmjs.com → revoke the token. It is not needed again.
+#   2. Delete the NPM_TOKEN repository secret.
+#   3. Delete this file.
+#   4. Configure trusted publishing on both packages, then use release.yml for
+#      every subsequent release. See release.yml for those fields.
+#
+# Note that a granular token with bypass-2FA cannot configure trusted publishing —
+# npm excludes it from `npm trust` — but step 4 happens on the website, not here.
+name: bootstrap publish (one-shot)
+
+# Manual only. A bootstrap that can fire from a push is a bootstrap that will fire
+# from a push.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "publish 0.1.0" to confirm. Publishing is permanent — a name@version can never be reused, even after unpublish.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write # provenance attestation, even though auth is a token
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest # provenance requires a cloud-hosted runner
+    steps:
+      - name: Check the confirmation phrase
+        if: inputs.confirm != 'publish 0.1.0'
+        run: |
+          echo "::error::Confirmation phrase did not match. Nothing was published."
+          exit 1
+
+      - name: Check the token is present
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::NPM_TOKEN secret is not set. See the header of this file."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Upgrade npm
+        run: |
+          npm install -g npm@latest
+          npm --version
+
+      - run: npm ci
+
+      - name: Install browsers for the verification gate
+        run: npx playwright install --with-deps chromium
+
+      # The gate runs before publishing, not after. A permanent action gets the
+      # checks first.
+      - run: npm test
+
+      # Library first: the CLI writes an exact dependency on it, so an app generated
+      # the moment the CLI lands must find a core version that already exists.
+      - name: Publish @nsdesign/appcraft-core
+        run: npm publish --access public --provenance -w @nsdesign/appcraft-core
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @nsdesign/appcraft
+        run: npm publish --access public --provenance -w @nsdesign/appcraft
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: What to do now
+        run: |
+          echo "### Published 0.1.0 :rocket:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Do these now, in order:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "1. Revoke the npm token on npmjs.com — it has no further use." >> "$GITHUB_STEP_SUMMARY"
+          echo "2. Delete the \`NPM_TOKEN\` repository secret." >> "$GITHUB_STEP_SUMMARY"
+          echo "3. Delete \`.github/workflows/bootstrap-publish.yml\`." >> "$GITHUB_STEP_SUMMARY"
+          echo "4. Add a trusted publisher to each package (see \`release.yml\`)." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Then smoke test the real registry path:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```sh' >> "$GITHUB_STEP_SUMMARY"
+          echo 'npx @nsdesign/appcraft@0.1.0 create smoke-test' >> "$GITHUB_STEP_SUMMARY"
+          echo 'cd smoke-test && npm install && npm run test' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

@@ -293,6 +293,26 @@ Append one block per implementation pass, **before** editing.
       was written before the defect was known.
 ```
 
+```yaml
+- pass: bootstrap-publish-workflow
+  routes: [enforcement, docs]
+  docs_read:
+    - .github/workflows/release.yml
+    - docs/plans/scaffolder-and-style-guide.md
+  tier: 4
+  tier_reason: >
+    Release surface. Adds the only workflow in the repository that authenticates with
+    a token, and it performs a permanent action — a published name@version can never
+    be reused. Tier 4 by the table.
+  run:
+    - npm test
+    - python3 -c "yaml.safe_load(...)"  # both workflows parse
+  skip:
+    - >
+      Running the workflow. It requires an NPM_TOKEN secret this environment cannot
+      hold and publishes irreversibly; the owner runs it from the Actions tab.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -1051,3 +1071,77 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
     prose, not gates; only the directories' existence is enforced.
   - The tarballs built before this pass ship the placeholder. They are superseded, not
     broken — but they must not be the ones published.
+
+### Bootstrap publish — the one place a token is allowed
+
+- **Result:** `.github/workflows/bootstrap-publish.yml` performs the first publish of
+  both packages using a short-lived token held in GitHub's encrypted secret store, and
+  deletes itself from the process afterwards by instruction. `release.yml` now points
+  at it instead of claiming the first publish must be done by hand.
+  - Manual trigger only, and gated on typing `publish 0.1.0`. A bootstrap that can
+    fire from a push is a bootstrap that will fire from a push, and the action it takes
+    is permanent: a published `name@version` can never be reused, even after
+    `npm unpublish`.
+  - Two guard steps run before checkout: the confirmation phrase, then the presence of
+    the secret. Failing on a missing secret after installing browsers and running the
+    full gate would waste several minutes to say something knowable in one second.
+  - The gate still runs before either publish.
+- **Rules applied:** `evidence-over-assertion`, `verification-tier-preclassified`,
+  `preflight-attested`, `worklog-decision-trail`.
+- **The correction that matters: the bootstrap *can* carry provenance.** I had told the
+  owner the first publish could not, which was true of a laptop publish and false of
+  this one. npm's requirements for provenance are a supported cloud CI provider, a
+  cloud-hosted runner, `id-token: write`, npm ≥ 9.5.0, and a `repository` field
+  matching — **case-sensitively** — where the publish runs from. Trusted publishing
+  makes provenance automatic; it is not a precondition for it. All five hold here, so
+  both publishes carry `--provenance` and 0.1.0 is attested from the start.
+  Verified the case-sensitive requirement rather than assuming it: `git remote` is
+  `NSDesign/appcraft` and both manifests say `github.com/NSDesign/appcraft`.
+- **Rejected alternatives:**
+  - *Accepting a token pasted into the session.* It would work and it is the wrong
+    mechanism. The container is ephemeral but the transcript is not, so the credential
+    would outlive the task in a log; and an `@nsdesign` write token is not scoped to
+    one publish. Routing it through GitHub's secret store means it goes from npmjs.com
+    to an encrypted store without passing through a conversation.
+  - *Publishing from the laptop.* Recommended first and declined by the owner. It
+    remains documented in `release.yml` as the alternative.
+  - *Folding the bootstrap into `release.yml`.* A token path and an OIDC path in one
+    file means the token path outlives its purpose. A separate file can be deleted,
+    and its header says to.
+  - *Omitting `--provenance` because auth is a token.* That conflates authentication
+    with attestation. They are independent, which is exactly the correction above.
+- **Evidence:**
+  - Both workflows parse: `yaml.safe_load` over each, and the step list is as
+    intended — guards first, gate before publish, core before CLI.
+  - `git remote get-url origin` and both `package.json` `repository.url` fields agree
+    on `NSDesign/appcraft`, which is what provenance checks case-sensitively.
+  - `npm test` — **failed on the first run**, then exit 0. Both perf scenarios
+    exceeded budget (`collection-branch-activation`, `panel-discriminant-switch`)
+    while the machine was under load from a concurrent install and build; load average
+    1.68 on 4 cores. Three consecutive runs of `app-performance.spec.ts` on a quiet
+    machine passed, and this pass changed two YAML files and a markdown file, none of
+    which can affect runtime. Recorded rather than re-run into silence: the first
+    result is part of the evidence, and the entry originally claimed exit 0 before the
+    command had been run at all.
+  - `npm publish --dry-run --access public` against the core tarball, run
+    unauthenticated: exits 0, lists the 10 files, warns about login. Confirms the
+    tarball is a valid publish input before any credential exists.
+- **Risks:**
+  - **This workflow has never run, and its first run publishes irreversibly.** Every
+    step is verified except the two that need a credential. A typo in a package name
+    burns that name at that version permanently.
+  - The token must have bypass-2FA to work here, and npm excludes bypass-2FA tokens
+    from `npm trust` — so it cannot also configure trusted publishing. That step is on
+    the website, but anyone expecting one credential to do both will be surprised.
+  - Nothing enforces the deletion of this workflow or the revocation of the token. The
+    header says to; a header is not a gate.
+  - `npm install -g npm@latest` takes whatever npm publishes that day. It is pinned to
+    nothing, so a bad npm release lands here first.
+  - **The perf budgets are tight enough that background load flips them.** An earlier
+    entry predicted they would need re-deriving on real hardware; this is the first
+    time it happened. `bootstrap-publish.yml` and `release.yml` both run the full gate
+    on a shared GitHub runner, which is noisier than a quiet sandbox — so a release can
+    fail on contention rather than on a defect. Either re-derive the budgets against
+    runner hardware or measure the interaction in a way that is insensitive to
+    scheduling; raising the numbers until they stop failing would only make them
+    describe nothing.
