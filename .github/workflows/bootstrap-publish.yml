@@ -17,14 +17,15 @@
 #        - Bypass 2FA: ENABLED (a CI job cannot answer a 2FA prompt)
 #        - Expiration: the shortest offered — this token has one job
 #   2. GitHub → this repo → Settings → Secrets and variables → Actions
-#        - New repository secret, name: NPM_TOKEN
+#        - New repository secret, named either APPCRAFT or NPM_TOKEN. This repo's
+#          secret is currently APPCRAFT, so that name is read first.
 #   3. Actions → "bootstrap publish (one-shot)" → Run workflow
 #        - Type `publish 0.1.0` into the confirm box
 #
 # ── Immediately after it succeeds ─────────────────────────────────────────────
 #
 #   1. npmjs.com → revoke the token. It is not needed again.
-#   2. Delete the NPM_TOKEN repository secret.
+#   2. Delete the repository secret.
 #   3. Delete this file.
 #   4. Configure trusted publishing on both packages, then use release.yml for
 #      every subsequent release. See release.yml for those fields.
@@ -67,16 +68,16 @@ jobs:
       # length is enough to tell "present" from "absent" without revealing anything.
       - name: Check the token is present
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN_AS_VARIABLE: ${{ vars.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.APPCRAFT || secrets.NPM_TOKEN }}
+          TOKEN_AS_VARIABLE: ${{ vars.APPCRAFT || vars.NPM_TOKEN }}
         run: |
           if [ -n "$NPM_TOKEN" ]; then
-            echo "NPM_TOKEN secret found (${#NPM_TOKEN} characters)."
+            echo "npm token secret found (${#NPM_TOKEN} characters)."
             exit 0
           fi
 
-          if [ -n "$NPM_TOKEN_AS_VARIABLE" ]; then
-            echo "::error::NPM_TOKEN exists as a repository VARIABLE, not a secret. \
+          if [ -n "$TOKEN_AS_VARIABLE" ]; then
+            echo "::error::The token exists as a repository VARIABLE, not a secret. \
           Delete it from the Variables tab and re-add it under the Secrets tab \
           (Settings → Secrets and variables → Actions → Secrets → New repository secret). \
           A token in the Variables tab is stored in plain text and is readable by anyone \
@@ -84,11 +85,13 @@ jobs:
             exit 1
           fi
 
-          echo "::error::No NPM_TOKEN found as either a secret or a variable. Check: \
-          (1) the name is exactly NPM_TOKEN; \
-          (2) it is a *repository* secret, not an *environment* secret — this job \
+          echo "::error::No npm token found under APPCRAFT or NPM_TOKEN, as either a \
+          secret or a variable. Check: \
+          (1) the name is exactly APPCRAFT or NPM_TOKEN; \
+          (2) it is on the *Actions* tab, not Dependabot or Codespaces; \
+          (3) it is a *repository* secret, not an *environment* secret — this job \
           declares no environment, so environment secrets are not visible to it; \
-          (3) it was added to NSDesign/appcraft and not another repository."
+          (4) it was added to NSDesign/appcraft and not another repository."
           exit 1
 
       - uses: actions/checkout@v4
@@ -117,12 +120,12 @@ jobs:
       - name: Publish @nsdesign/appcraft-core
         run: npm publish --access public --provenance -w @nsdesign/appcraft-core
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.APPCRAFT || secrets.NPM_TOKEN }}
 
       - name: Publish @nsdesign/appcraft
         run: npm publish --access public --provenance -w @nsdesign/appcraft
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.APPCRAFT || secrets.NPM_TOKEN }}
 
       - name: What to do now
         run: |
@@ -131,7 +134,7 @@ jobs:
           echo "Do these now, in order:" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "1. Revoke the npm token on npmjs.com — it has no further use." >> "$GITHUB_STEP_SUMMARY"
-          echo "2. Delete the \`NPM_TOKEN\` repository secret." >> "$GITHUB_STEP_SUMMARY"
+          echo "2. Delete the \`APPCRAFT\` repository secret." >> "$GITHUB_STEP_SUMMARY"
           echo "3. Delete \`.github/workflows/bootstrap-publish.yml\`." >> "$GITHUB_STEP_SUMMARY"
           echo "4. Add a trusted publisher to each package (see \`release.yml\`)." >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
