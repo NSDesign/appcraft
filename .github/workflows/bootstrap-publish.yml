@@ -57,14 +57,39 @@ jobs:
           echo "::error::Confirmation phrase did not match. Nothing was published."
           exit 1
 
+      # "Not set" is three different problems wearing one message, and the fix differs
+      # for each. Settings → Secrets and variables → Actions has a Secrets tab and a
+      # Variables tab; a value in the wrong one is invisible to `secrets.*` and is the
+      # easiest mistake to make. Environment secrets need `environment:` on the job,
+      # which this workflow deliberately does not declare.
+      #
+      # Only the length is ever printed. GitHub masks the value itself in logs, and a
+      # length is enough to tell "present" from "absent" without revealing anything.
       - name: Check the token is present
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN_AS_VARIABLE: ${{ vars.NPM_TOKEN }}
         run: |
-          if [ -z "$NPM_TOKEN" ]; then
-            echo "::error::NPM_TOKEN secret is not set. See the header of this file."
+          if [ -n "$NPM_TOKEN" ]; then
+            echo "NPM_TOKEN secret found (${#NPM_TOKEN} characters)."
+            exit 0
+          fi
+
+          if [ -n "$NPM_TOKEN_AS_VARIABLE" ]; then
+            echo "::error::NPM_TOKEN exists as a repository VARIABLE, not a secret. \
+          Delete it from the Variables tab and re-add it under the Secrets tab \
+          (Settings → Secrets and variables → Actions → Secrets → New repository secret). \
+          A token in the Variables tab is stored in plain text and is readable by anyone \
+          who can see the repository, so revoke it on npmjs.com and generate a new one."
             exit 1
           fi
+
+          echo "::error::No NPM_TOKEN found as either a secret or a variable. Check: \
+          (1) the name is exactly NPM_TOKEN; \
+          (2) it is a *repository* secret, not an *environment* secret — this job \
+          declares no environment, so environment secrets are not visible to it; \
+          (3) it was added to NSDesign/appcraft and not another repository."
+          exit 1
 
       - uses: actions/checkout@v4
 
