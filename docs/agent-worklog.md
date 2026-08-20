@@ -313,6 +313,26 @@ Append one block per implementation pass, **before** editing.
       hold and publishes irreversibly; the owner runs it from the Actions tab.
 ```
 
+```yaml
+- pass: first-publish
+  routes: [enforcement, docs]
+  docs_read:
+    - .github/workflows/bootstrap-publish.yml
+    - .github/workflows/release.yml
+  tier: 4
+  tier_reason: >
+    Release. The permanent one — 0.1.0 of both packages now exists on the public
+    registry and those name@version pairs can never be reused.
+  run:
+    - gh workflow run bootstrap-publish.yml (dispatched via API, three attempts)
+    - curl https://registry.npmjs.org/@nsdesign%2Fappcraft{,-core}
+    - npx @nsdesign/appcraft@0.1.0 create smoke-test
+  skip:
+    - >
+      Nothing. This pass is verification of a published artefact, so every claim is
+      checked against the registry rather than against the workflow's exit code.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -1145,3 +1165,56 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
     runner hardware or measure the interaction in a way that is insensitive to
     scheduling; raising the numbers until they stop failing would only make them
     describe nothing.
+
+### First publish — 0.1.0 is on the registry, with provenance
+
+- **Result:** `@nsdesign/appcraft-core@0.1.0` and `@nsdesign/appcraft@0.1.0` are
+  published, both carrying SLSA provenance attestations, and `npx
+  @nsdesign/appcraft@0.1.0 create` produces a working app that resolves core from the
+  registry. The bootstrap workflow has done its one job.
+- **Rules applied:** `evidence-over-assertion`, `verification-tier-preclassified`,
+  `preflight-attested`, `worklog-decision-trail`.
+- **Three dispatches, two stopped by the guard.** Runs 1 and 2 failed in three and
+  nine seconds at the token check, because the repository secret is named `APPCRAFT`
+  and the workflow read `NPM_TOKEN`. The guard's value is measurable here rather than
+  hypothetical: without it, run 1 would have run the gate, **published core
+  successfully**, and then failed at the CLI — leaving `appcraft-core@0.1.0` burned
+  permanently with no matching CLI, and no way to reuse the version.
+  Run 2's diagnostic ruled out the Variables tab, which narrowed the cause to a name
+  mismatch and made the fix a one-line change rather than a hunt.
+- **Rejected alternatives:**
+  - *Trusting the workflow's exit code.* It said success; the registry said `Not
+    found` for both packages a minute later. The resolution was CDN propagation, but
+    that was established by reading npm's own publish output and re-querying, not by
+    assuming. A green tick is a claim about a process, not about the artefact.
+  - *Renaming the secret to `NPM_TOKEN`.* Changing the workflow was one line and
+    touched nothing the owner had already set up. Both names now resolve.
+- **Evidence:**
+  - Run 3, all steps green:
+    `https://github.com/NSDesign/appcraft/actions/runs/32356967700`
+  - `npm notice publish Signed provenance statement with source and build information
+    from GitHub Actions` — transparency log index `2529985275`.
+  - Registry metadata: core is 10 files / 26,134 bytes unpacked, shasum
+    `a7ab5978d46fb7cafc1d6fc595e1064265762ab6`; CLI is 58 files / 214,441 bytes. Both
+    carry `predicateType: https://slsa.dev/provenance/v1`. **The core shasum is
+    identical to the local `npm publish --dry-run` run before any credential
+    existed**, so the published bytes are the bytes that were verified.
+  - `npx @nsdesign/appcraft@0.1.0 create smoke-test` — 45 files, core pinned `0.1.0`,
+    resolved from `registry.npmjs.org`, integrity `sha512-lHsMixSYbjG0E…`. Then
+    `typecheck` exit 0 and `build` exit 0 against the registry copy.
+- **Risks:**
+  - **The `collection-branch-activation` perf test is load-sensitive, and the
+    first-run sequence is the worst case.** Measured on the smoke-test app: 5/5 passes
+    running the spec alone, 3/3 passes running the full suite on a quiet machine, but
+    **it failed on the run immediately following `npm install` and `vite build`**. The
+    CLI's own printed next steps are `npm install` then `npm run test` — back to back,
+    which is exactly when the machine is busiest. A new user's first gate can therefore
+    be red through no fault of their own, on the framework whose pitch is that the gate
+    means something. Raising the number would hide it; the budget measures an
+    interaction that includes Playwright's locator resolution and scheduling, so the
+    fix is to measure something scheduling-insensitive or to quiesce before sampling.
+  - The npm token is still live and the `APPCRAFT` secret still exists at the time of
+    writing. Both should be removed; nothing enforces it.
+  - `bootstrap-publish.yml` is still in the repository and still dispatchable. It would
+    fail on a re-run — 0.1.0 cannot be republished — but it should be deleted.
+  - Trusted publishing is not yet configured, so `release.yml` has still never run.
