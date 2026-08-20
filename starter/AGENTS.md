@@ -36,7 +36,7 @@ Open exactly one listed document per read. Never continue from truncated output.
 Generated from the appcraft route registry. Editing this table has no effect.
 
 <!-- appcraft:routes:start -->
-<!-- Generated from docs/routes.json by scripts/generate-routes.mjs. Do not edit by hand. -->
+<!-- Generated from the appcraft route registry (docs/routes.json). Do not edit by hand. -->
 
 | Route id | Fires on | Scale | Plan | Implementation | Verification |
 |---|---|---|---|---|---|

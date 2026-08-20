@@ -7,10 +7,10 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test:browser": "playwright test",
+    "test:browser": "playwright test --grep-invert \"browser perf:\"",
     "test:browser:perf": "playwright test --grep \"browser perf:\" --workers=1",
     "verify:quick": "npm run typecheck",
-    "verify:final": "npm run verify:quick && npm run test:browser",
+    "verify:final": "npm run verify:quick && npm run test:browser && npm run test:browser:perf",
     "test": "npm run verify:final",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

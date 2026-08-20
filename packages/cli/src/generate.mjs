@@ -21,14 +21,23 @@ import {
   removeDirectory,
 } from "./copy-recursive.mjs";
 import {
+  APP_SCOPED_SCRIPTS,
   GITIGNORE_PACKED_NAME,
+  ROUTE_REGISTRY,
   excludedFromGeneration,
   packageRoot,
   resolveTemplateSources,
 } from "./paths.mjs";
 
 /** Files whose presence proves generation produced a usable app, not an empty shell. */
-const REQUIRED_OUTPUTS = ["AGENTS.md", "package.json", "docs/agent-worklog.md", "e2e"];
+const REQUIRED_OUTPUTS = [
+  "AGENTS.md",
+  "package.json",
+  "docs/agent-worklog.md",
+  "docs/routes.json",
+  "e2e",
+  "scripts/check-style-guide.mjs",
+];
 
 async function readJson(file) {
   return JSON.parse(await fs.readFile(file, "utf8"));
@@ -78,6 +87,7 @@ async function validateStaged(stagingDir) {
  *   name: string,
  *   force?: boolean,
  *   coreVersion?: string,
+ *   skills?: boolean,
  * }} options
  */
 export async function generateAppcraftApp(options) {
@@ -106,9 +116,28 @@ export async function generateAppcraftApp(options) {
     });
 
     // 2. The skills, so the workflow fires in the agent without configuration.
-    await copyDirectory(sources.skills, path.join(stagingDir, ".agents/skills"));
+    if (options.skills !== false) {
+      await copyDirectory(sources.skills, path.join(stagingDir, ".agents/skills"));
+    }
 
-    // 3. A standalone manifest.
+    // 3. The contract checks, and the registry they read. `AGENTS.md` routes the
+    //    style-guide gate to `npm run check:style-guide`; without these the command
+    //    it names does not exist, and the contract is unenforced exactly where it is
+    //    supposed to bite.
+    await fs.mkdir(path.join(stagingDir, "scripts"), { recursive: true });
+    for (const script of APP_SCOPED_SCRIPTS) {
+      await fs.copyFile(
+        path.join(sources.scripts, script),
+        path.join(stagingDir, "scripts", script),
+      );
+    }
+
+    await writeJson(
+      path.join(stagingDir, ROUTE_REGISTRY),
+      appAxisRegistry(await readJson(sources.routes)),
+    );
+
+    // 4. A standalone manifest.
     const starterManifest = await readJson(path.join(stagingDir, "package.json"));
     const coreVersion = options.coreVersion ?? (await resolveCoreVersion(sources));
     await writeJson(
@@ -119,16 +148,38 @@ export async function generateAppcraftApp(options) {
       }),
     );
 
-    // 4. A fresh worklog. The starter's records how the *framework* was built, which
+    // 5. A fresh worklog. The starter's records how the *framework* was built, which
     //    would read as this app's history and satisfy the worklog gate without the
     //    user writing a word.
     await fs.writeFile(path.join(stagingDir, "docs/agent-worklog.md"), starterWorklog());
 
+    // 6. The two files every repository is expected to have. The manifest declares a
+    //    licence, so the app has to carry its text; without this a generated app
+    //    claims MIT and ships nothing that grants it.
+    //
+    //    Written only when the target has none. A repository created on GitHub with a
+    //    README and a licence chosen is the ordinary starting point, and those are
+    //    the user's answers — a scaffolder that overwrites them has destroyed the
+    //    first two decisions they made about their own project.
+    for (const [file, contents] of [
+      ["README.md", () => appReadme(options.name)],
+      ["LICENSE", mitLicence],
+    ]) {
+      if (!(await pathExists(path.join(targetDir, file)))) {
+        await fs.writeFile(path.join(stagingDir, file), contents());
+      }
+    }
+
     await validateStaged(stagingDir);
 
-    // 5. Promote. Everything above this line is discardable; nothing below can fail
+    // 7. Promote. Everything above this line is discardable; nothing below can fail
     //    halfway.
-    if (options.force && (await pathExists(targetDir))) {
+    //
+    // Merge whenever the target already exists, not only under `--force`. A clone
+    // holding nothing but `.git` is a legitimate target, and `rename` onto it fails
+    // with ENOTEMPTY — so keying the merge on the flag rather than on the directory
+    // turned the most ordinary starting point into a crash.
+    if (await pathExists(targetDir)) {
       await mergeInto(stagingDir, targetDir);
     } else {
       await fs.mkdir(path.dirname(targetDir), { recursive: true });
@@ -194,6 +245,125 @@ async function resolveCoreVersion(sources) {
     "Could not determine the @nsdesign/appcraft-core version to depend on. " +
       "Pass --core-version explicitly.",
   );
+}
+
+/**
+ * The registry as a generated app should see it: application routes only.
+ *
+ * Framework routes describe work on appcraft itself. Shipping them would let an app's
+ * preflight attestation declare `kernel` or `store` and pass — an id that reads as
+ * diligence while naming work the app cannot do.
+ */
+function appAxisRegistry(registry) {
+  return {
+    ...registry,
+    axes: { app: registry.axes.app },
+    routes: registry.routes.filter((route) => route.axis === "app"),
+  };
+}
+
+/**
+ * The app's README.
+ *
+ * Deliberately short and entirely about *this* app: what to run, what the folders
+ * are, and how the contract gate behaves. Explaining appcraft belongs in appcraft's
+ * own README, which the reader can follow the link to.
+ */
+function appReadme(name) {
+  return `# ${name}
+
+An [appcraft](https://www.npmjs.com/package/@nsdesign/appcraft) application.
+
+## Getting started
+
+\`\`\`bash
+npm install
+npx playwright install --with-deps   # first run only; the gate drives a real browser
+npm run dev
+\`\`\`
+
+If the machine already provides a Chromium that Playwright did not install — a CI
+image, a sandbox, a distribution package — point the suite at it instead of
+downloading another:
+
+\`\`\`bash
+APPCRAFT_CHROMIUM=/path/to/chromium npm test
+\`\`\`
+
+## Scripts
+
+| Script | What it does |
+|---|---|
+| \`npm run dev\` | Start the Vite dev server. |
+| \`npm run build\` | Typecheck and build for production. |
+| \`npm run preview\` | Serve the production build locally. |
+| \`npm run typecheck\` | \`tsc --noEmit\`. |
+| \`npm run check:contract\` | The contract gate: preflight, worklog, style guide, projection graph. |
+| \`npm run test:browser\` | The Playwright suite, without the performance budgets. |
+| \`npm run test:browser:perf\` | The performance budgets, run alone so contention cannot skew them. |
+| \`npm test\` | Everything above, in order. |
+
+## Layout
+
+\`\`\`
+AGENTS.md            The app contract, with the routing table for product work.
+docs/appcraft/       The route documents the contract sends an agent to.
+docs/agent-worklog.md  Preflight attestations and the decision trail.
+docs/routes.json     The route registry check:preflight reads.
+scripts/             The contract checks, runnable in this repository.
+.agents/skills/      Workflow skills, so the process fires without configuration.
+src/app/             App schema, entry point, and theme.
+e2e/                 Playwright specs proving the projection invariants.
+\`\`\`
+
+## The contract gate
+
+\`npm run check:contract\` is dormant while \`docs/agent-worklog.md\` says
+\`Mode: starter\` — a scaffold nobody has worked on has nothing to attest. Replacing
+that with \`Mode: product\` arms it, and from then on every pass must record a
+preflight attestation and a decision-trail entry before it can pass.
+
+## Working with an agent
+
+Open this folder in Claude Code, Codex, Cursor, or another agent and describe what
+you want built. The agent reads \`AGENTS.md\`, selects the matching routes, and is
+gated by the checks in this repository.
+
+## Licence
+
+[MIT](LICENSE).
+`;
+}
+
+/**
+ * MIT, matching the licence the generated manifest declares. A manifest that names a
+ * licence the repository does not carry is a claim with nothing behind it.
+ */
+function mitLicence() {
+  const year = new Date().getFullYear();
+
+  return `MIT License
+
+Copyright (c) ${year}
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`;
 }
 
 function starterWorklog() {

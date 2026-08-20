@@ -175,7 +175,7 @@ export const GENERATED_END = "<!-- appcraft:routes:end -->";
 export function renderGeneratedBlock(registry, axis) {
   return [
     GENERATED_START,
-    `<!-- Generated from docs/routes.json by scripts/generate-routes.mjs. Do not edit by hand. -->`,
+    `<!-- Generated from the appcraft route registry (docs/routes.json). Do not edit by hand. -->`,
     "",
     renderAxisTable(registry, axis),
     "",

@@ -63,6 +63,26 @@ export async function copyDirectory(from, to, options = {}) {
   return written;
 }
 
+/**
+ * Entries that do not make a directory "occupied".
+ *
+ * The overwhelmingly common way to start an app is to create the repository first,
+ * clone it, then scaffold into the clone. Everything listed here is something that
+ * flow leaves behind before a single line of the app exists. Generation merges over
+ * all of it without destroying anything, so refusing on their account only teaches
+ * the user to reach for `--force` — the one flag that *can* overwrite real work.
+ */
+export const IGNORED_WHEN_TESTING_EMPTINESS = new Set([
+  ".DS_Store",
+  ".git",
+  ".gitattributes",
+  ".github",
+  ".gitignore",
+  "LICENCE",
+  "LICENSE",
+  "README.md",
+]);
+
 /** Whether a directory holds anything a user would mind losing. */
 export async function directoryHasMeaningfulEntries(target) {
   if (!(await pathExists(target))) {
@@ -75,5 +95,5 @@ export async function directoryHasMeaningfulEntries(target) {
   }
 
   const entries = await fs.readdir(target);
-  return entries.some((entry) => entry !== ".DS_Store");
+  return entries.some((entry) => !IGNORED_WHEN_TESTING_EMPTINESS.has(entry));
 }

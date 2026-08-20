@@ -19,6 +19,16 @@
  */
 import { readFileSync } from "node:fs";
 
+import {
+  isStarterMode,
+  readWorklog,
+  reportStarterMode,
+  resolveAppRoot,
+  resolveContractDoc,
+} from "./app-context.mjs";
+
+const appRoot = resolveAppRoot();
+
 const REQUIRED_FIELDS = [
   { label: "Result", pattern: /^\s*[-*]\s+\*\*Result:?\*\*/m },
   { label: "Rules applied", pattern: /^\s*[-*]\s+\*\*Rules applied:?\*\*/m },
@@ -35,11 +45,16 @@ function fail(message, ...detail) {
   process.exit(1);
 }
 
-let worklog;
-try {
-  worklog = readFileSync("docs/agent-worklog.md", "utf8");
-} catch {
+const found = readWorklog(appRoot);
+if (!found) {
   fail("docs/agent-worklog.md is missing.");
+}
+
+const worklog = found.text;
+
+// A scaffold nobody has worked on yet has no trail to be incomplete.
+if (isStarterMode(worklog)) {
+  reportStarterMode("check:worklog");
 }
 
 const trailIndex = worklog.indexOf("## Decision trail");
@@ -92,12 +107,12 @@ if (!citesCommand && !declaresNoEvidence) {
 }
 
 // Rule ids cited in the trail must exist in the catalogue.
-let contract;
-try {
-  contract = readFileSync("docs/decision-contract.md", "utf8");
-} catch {
-  fail("docs/decision-contract.md is missing, so cited rule ids cannot be verified.");
+const contractFile = resolveContractDoc(appRoot, "decision-contract.md");
+if (!contractFile) {
+  fail("the decision contract is missing, so cited rule ids cannot be verified.");
 }
+
+const contract = readFileSync(contractFile, "utf8");
 
 const START = "appcraft-contract:decision-rule-list:start";
 const END = "appcraft-contract:decision-rule-list:end";

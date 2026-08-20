@@ -13,11 +13,11 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
+import { resolveAppRoot } from "./app-context.mjs";
 import { findDanglingReferences, findShortestCycle } from "./projection-graph.mjs";
 
-const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const projectRoot = resolveAppRoot();
 
 /**
  * Where a declared graph is read from. A JSON array of
@@ -29,10 +29,7 @@ if (!existsSync(graphPath)) {
   console.log(
     "check:projection-graph — no declared projection graph at src/appcraft/schema/projection-graph.json.",
   );
-  console.log(
-    "  Nothing to check yet: the extractor lands with the schema route. The cycle analysis itself is",
-  );
-  console.log("  covered by scripts/projection-graph.test.mjs (npm run test:scripts).");
+  console.log("  Nothing to check yet: the extractor lands with the schema route.");
   process.exit(0);
 }
 

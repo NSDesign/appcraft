@@ -21,6 +21,28 @@ export function sanitisePackageName(value) {
 }
 
 /**
+ * The contract gate, which exists only in a generated app.
+ *
+ * These scripts run `scripts/*.mjs`, and `scripts/` is assembled during generation —
+ * the starter in this repository has no such folder, so its manifest must not claim
+ * commands it cannot run. They are added here, where the standalone manifest is
+ * built, for the same reason the workspace fields are removed here.
+ */
+const CONTRACT_GATE = {
+  "check:preflight": "node scripts/check-preflight.mjs",
+  "check:projection-graph": "node scripts/check-projection-graph.mjs",
+  "check:style-guide": "node scripts/check-style-guide.mjs",
+  "check:worklog": "node scripts/check-worklog.mjs",
+};
+
+const CONTRACT_GATE_ORDER = [
+  "check:preflight",
+  "check:worklog",
+  "check:style-guide",
+  "check:projection-graph",
+];
+
+/**
  * @param {object} starterManifest  the starter's package.json, parsed
  * @param {{ name: string, coreVersion: string }} options
  */
@@ -37,12 +59,22 @@ export function createAppManifest(starterManifest, options) {
     dependencies["@nsdesign/appcraft-core"] = options.coreVersion;
   }
 
+  const scripts = { ...(starterManifest.scripts ?? {}), ...CONTRACT_GATE };
+
+  scripts["check:contract"] = CONTRACT_GATE_ORDER.map((name) => `npm run ${name}`).join(" && ");
+
+  // The contract gate runs first: it is the cheapest, and a pass that skipped its
+  // preflight should be told so before a browser starts.
+  scripts["verify:final"] =
+    "npm run check:contract && npm run verify:quick && npm run test:browser && npm run test:browser:perf";
+
   const manifest = {
     ...starterManifest,
     name,
     version: "0.1.0",
     private: true,
     description: `An appcraft application.`,
+    scripts,
     dependencies,
   };
 

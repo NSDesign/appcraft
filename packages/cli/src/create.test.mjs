@@ -298,3 +298,185 @@ test("help works without a target directory", async () => {
   assert.equal(await runAppcraftCli(["create", "--help"], context), 0);
   assert.match(lines.join(""), /--core-version/);
 });
+
+// ---------------------------------------------------------------------------
+// Regressions from the first real use of `npx @nsdesign/appcraft create`.
+// Every test below names a defect that shipped in 0.1.0 and was found by running
+// the CLI against an empty GitHub repository, not by any test that existed then.
+// ---------------------------------------------------------------------------
+
+test("a clone holding only .git is not 'not empty'", async () => {
+  // The ordinary way to start: create the repo, clone it, scaffold into the clone.
+  // 0.1.0 refused it and told the user to pass --force, which is the one flag that
+  // can overwrite real work.
+  await withTempDir(async (dir) => {
+    const target = path.join(dir, "cloned");
+    await fs.mkdir(path.join(target, ".git"), { recursive: true });
+    await fs.writeFile(path.join(target, ".git/HEAD"), "ref: refs/heads/main\n");
+    await fs.writeFile(path.join(target, "README.md"), "# cloned\n");
+
+    await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "cloned" });
+
+    assert.ok(await pathExistsForTest(path.join(target, "AGENTS.md")));
+    assert.equal(
+      await fs.readFile(path.join(target, ".git/HEAD"), "utf8"),
+      "ref: refs/heads/main\n",
+      "Generation must not disturb the clone it was invited into.",
+    );
+  });
+});
+
+test("a README and licence the user already chose are left alone", async () => {
+  await withTempDir(async (dir) => {
+    const target = path.join(dir, "app");
+    await fs.mkdir(target, { recursive: true });
+    await fs.writeFile(path.join(target, "README.md"), "# mine\n");
+    await fs.writeFile(path.join(target, "LICENSE"), "my licence\n");
+
+    await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "app" });
+
+    assert.equal(await fs.readFile(path.join(target, "README.md"), "utf8"), "# mine\n");
+    assert.equal(await fs.readFile(path.join(target, "LICENSE"), "utf8"), "my licence\n");
+  });
+});
+
+test("an app with no README or licence is given both", async () => {
+  await withTempDir(async (dir) => {
+    await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "demo" });
+
+    const readme = await fs.readFile(path.join(dir, "demo/README.md"), "utf8");
+    const licence = await fs.readFile(path.join(dir, "demo/LICENSE"), "utf8");
+    const manifest = JSON.parse(await fs.readFile(path.join(dir, "demo/package.json"), "utf8"));
+
+    assert.match(readme, /^# demo$/m);
+    assert.match(licence, /MIT License/);
+    assert.equal(
+      manifest.license,
+      "MIT",
+      "The manifest names a licence; the repository must carry its text.",
+    );
+  });
+});
+
+test("the generated .gitignore keeps node_modules out of the user's first commit", async () => {
+  // `create` installs by default, so node_modules exists before the user's first
+  // `git add`. 0.1.0 shipped a two-line ignore file that did not mention it — while
+  // the comment explaining the whole pack-as-`gitignore` mechanism said the point of
+  // it was that "a generated app [does not] commit its own node_modules".
+  await withTempDir(async (dir) => {
+    await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "demo" });
+
+    const ignored = await fs.readFile(path.join(dir, "demo/.gitignore"), "utf8");
+    for (const entry of ["node_modules", "dist", "test-results", "playwright-report"]) {
+      assert.match(ignored, new RegExp(`^${entry}`, "m"), `.gitignore must cover ${entry}.`);
+    }
+  });
+});
+
+test("--no-skills does what its help text says", async () => {
+  // The flag documented "do not copy the workflow skills into the app" but only ever
+  // suppressed the separate --agent install; generation copied them regardless.
+  await withTempDir(async (dir) => {
+    const { context } = silentContext({ cwd: dir });
+    await runAppcraftCli(["create", "demo", "--yes", "--no-install", "--no-skills"], context);
+
+    assert.equal(
+      await pathExistsForTest(path.join(dir, "demo/.agents/skills")),
+      false,
+      "--no-skills must not copy skills into the app.",
+    );
+  });
+});
+
+test("the contract gate AGENTS.md names is present and runnable", async () => {
+  // AGENTS.md routes the style-guide gate to `npm run check:style-guide`. In 0.1.0 no
+  // generated app had that script, or a scripts/ directory at all: the contract's own
+  // enforcement did not ship with the contract.
+  await withTempDir(async (dir) => {
+    await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "demo" });
+
+    const appRoot = path.join(dir, "demo");
+    const manifest = JSON.parse(await fs.readFile(path.join(appRoot, "package.json"), "utf8"));
+    const contract = await fs.readFile(path.join(appRoot, "AGENTS.md"), "utf8");
+
+    for (const script of [...contract.matchAll(/npm run ([a-z][a-z:-]*)/g)].map((m) => m[1])) {
+      assert.ok(
+        script in manifest.scripts,
+        `AGENTS.md tells the agent to run "npm run ${script}", which the app does not define.`,
+      );
+    }
+
+    for (const [name, command] of Object.entries(manifest.scripts)) {
+      const script = command.match(/^node (scripts\/[\w.-]+)$/)?.[1];
+      if (script) {
+        assert.ok(
+          await pathExistsForTest(path.join(appRoot, script)),
+          `Script "${name}" runs ${script}, which was not generated.`,
+        );
+      }
+    }
+  });
+});
+
+test("the shipped registry describes app routes only", async () => {
+  // A framework route id in an app's attestation would read as diligence while naming
+  // work the app cannot do.
+  await withTempDir(async (dir) => {
+    await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "demo" });
+
+    const registry = JSON.parse(
+      await fs.readFile(path.join(dir, "demo/docs/routes.json"), "utf8"),
+    );
+
+    assert.deepEqual(Object.keys(registry.axes), ["app"]);
+    assert.ok(registry.routes.length > 0);
+    assert.ok(
+      registry.routes.every((route) => route.axis === "app"),
+      "A generated app must not carry framework routes.",
+    );
+  });
+});
+
+test("the performance budgets are not run against a contended browser", async () => {
+  // `npm test` on a freshly generated app failed: test:browser ran every spec at
+  // Playwright's default worker count, and the frame-gap budgets lose to the
+  // contention. The perf script existed with --workers=1 precisely because they are
+  // meant to run alone; nothing made the general run skip them.
+  await withTempDir(async (dir) => {
+    await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "demo" });
+
+    const { scripts } = JSON.parse(
+      await fs.readFile(path.join(dir, "demo/package.json"), "utf8"),
+    );
+
+    assert.match(scripts["test:browser"], /--grep-invert "browser perf:"/);
+    assert.match(scripts["test:browser:perf"], /--workers=1/);
+    assert.match(
+      scripts["verify:final"],
+      /test:browser:perf/,
+      "Excluding the budgets from the general run must not drop them from the gate.",
+    );
+  });
+});
+
+test("the CLI prints the browser install the gate depends on", async () => {
+  await withTempDir(async (dir) => {
+    const { context, lines } = silentContext({ cwd: dir });
+    await runAppcraftCli(["create", "demo", "--yes", "--no-install"], context);
+
+    assert.match(
+      lines.join(""),
+      /playwright install/,
+      "`npm test` drives a browser; telling the user to run it without saying so prints a command that fails.",
+    );
+  });
+});
+
+async function pathExistsForTest(target) {
+  try {
+    await fs.access(target);
+    return true;
+  } catch {
+    return false;
+  }
+}

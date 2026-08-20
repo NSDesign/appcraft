@@ -63,6 +63,7 @@ async function runCreate(argv, context) {
     cwd: options.cwd,
     force: options.force,
     name: options.name,
+    skills: options.skills,
     targetDir: options.targetDir,
     ...(options.coreVersion ? { coreVersion: options.coreVersion } : {}),
   });
@@ -108,6 +109,9 @@ async function runCreate(argv, context) {
   if (!options.install) {
     write(context, "  npm install");
   }
+  // The gate drives a real browser, and Playwright does not install one with the
+  // dependencies. Printing `npm test` without this is printing a command that fails.
+  write(context, "  npx playwright install --with-deps   # the gate drives a browser");
   write(context, `  ${createRunScriptCommand("test")}    # the verification gate`);
   write(context, "");
   write(context, "Then open the folder in your agent and describe the app you want, e.g.");

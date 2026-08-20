@@ -2,8 +2,8 @@
 /**
  * postpack — remove the staged template copies.
  *
- * `prepack` copies `starter/` and `.agents/skills/` into this package so the tarball
- * is self-contained. Left behind afterwards, those copies are worse than clutter:
+ * `prepack` copies `starter/`, `.agents/skills/`, the app-scoped checks and the route
+ * registry into this package so the tarball is self-contained. Left behind afterwards, those copies are worse than clutter:
  * `resolveTemplateSources()` checks the packaged location **first**, so a stale
  * `templates/starter` in a checkout silently shadows the real `starter/`. A developer
  * edits `starter/`, runs the CLI, and generates from a copy frozen at whenever
@@ -22,7 +22,7 @@ import { removeDirectory } from "../src/copy-recursive.mjs";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-for (const staged of ["templates", "appcraft-skills"]) {
+for (const staged of ["templates", "appcraft-skills", "appcraft-scripts", "appcraft-routes.json"]) {
   await removeDirectory(path.join(packageRoot, staged));
 }
 

@@ -12,7 +12,7 @@
     "check:projection-graph": "node scripts/check-projection-graph.mjs",
     "check:routes": "node scripts/generate-routes.mjs",
     "check:starter-docs": "node scripts/check-starter-docs.mjs",
-    "check:style-guide": "node scripts/check-style-guide.mjs",
+    "check:style-guide": "node scripts/check-style-guide.mjs starter",
     "check:docs": "node scripts/check-contract-docs.mjs",
     "check:worklog": "node scripts/check-worklog.mjs",
     "check:preflight": "node scripts/check-preflight.mjs",
@@ -27,7 +27,7 @@
     "verify:quick": "npm run typecheck && npm run lint && npm run check:boundaries && npm run check:projection-graph && npm run test:scripts && npm run test:unit",
     "verify:ui": "npm run test:browser",
     "verify:perf": "npm run test:browser:perf",
-    "verify:final": "npm run check:skills && npm run check:routes && npm run check:starter-docs && npm run check:style-guide && npm run check:docs && npm run check:worklog && npm run check:preflight && npm run verify:quick && npm run test:browser",
+    "verify:final": "npm run check:skills && npm run check:routes && npm run check:starter-docs && npm run check:style-guide && npm run check:docs && npm run check:worklog && npm run check:preflight && npm run verify:quick && npm run test:browser && npm run test:browser:perf",
     "test": "npm run verify:final"
   },
   "devDependencies": {

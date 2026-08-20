@@ -8,12 +8,15 @@
  * then cannot tell a deliberate default from a question nobody asked — and the whole
  * point of asking was to make the choice explicit.
  *
- * Runs against the starter here, and against the app itself once generated.
+ * Runs against the starter here, and against the app itself once generated — the
+ * same file in both places, shipped into a generated app alongside the contract it
+ * enforces. Pass the root to check as the first argument; it defaults to the
+ * directory holding `scripts/`.
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { projectRoot } from "./routes.mjs";
+import { resolveAppRoot } from "./app-context.mjs";
 
 /** The nine properties the style-guide route agrees. Names as the skill states them. */
 const REQUIRED_PROPERTIES = [
@@ -28,7 +31,7 @@ const REQUIRED_PROPERTIES = [
   "radius",
 ];
 
-const appRoot = process.argv[2] ? path.resolve(process.argv[2]) : path.join(projectRoot, "starter");
+const appRoot = resolveAppRoot();
 const themeFile = path.join(appRoot, "src/app/theme.ts");
 const recordFile = path.join(appRoot, "docs/style-guide.md");
 

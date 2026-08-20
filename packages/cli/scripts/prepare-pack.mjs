@@ -10,5 +10,6 @@ const repoRoot = path.resolve(packageRoot, "../..");
 const result = await preparePackTemplates({ packageRoot, repoRoot });
 
 console.log(
-  `prepare-pack — staged ${result.starterFiles} starter file(s) and ${result.skillFiles} skill file(s).`,
+  `prepare-pack — staged ${result.starterFiles} starter file(s), ${result.skillFiles} skill file(s) ` +
+    `and ${result.scriptFiles} contract check(s).`,
 );

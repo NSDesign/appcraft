@@ -333,6 +333,40 @@ Append one block per implementation pass, **before** editing.
       checked against the registry rather than against the workflow's exit code.
 ```
 
+```yaml
+- pass: first-run-scaffold-fixes
+  routes: [starter, enforcement, docs]
+  docs_read:
+    - AGENTS.md
+    - docs/decision-contract.md
+    - docs/verification.md
+    - starter/AGENTS.md
+  tier: 2
+  tier_reason: >
+    Changes what a generated app contains and what its gate runs, so every app
+    created from here on is measured differently. No kernel, schema, store or
+    controls code is touched, so the blast radius is generation and enforcement
+    rather than framework behaviour. Not tier 0 — this changes what passes and
+    fails. Not tier 4 — no public API changes shape; `generateAppcraftApp` gains
+    one optional field.
+  run:
+    - node --test packages/cli/src/create.test.mjs
+    - npm run check:skills
+    - npm run check:routes
+    - npm run check:starter-docs
+    - npm run check:style-guide
+    - npm run check:docs
+    - npm run check:worklog
+    - npm run verify:quick
+    - npm run test:browser
+    - npm run test:browser:perf
+  skip:
+    - >
+      Nothing. The defects in this pass were found by running the published CLI, so
+      the evidence for each is a generated app that now behaves correctly, generated
+      and executed rather than reasoned about.
+```
+
 ## Decision trail
 
 Each entry names the user-visible result, the contract rules applied, rejected
@@ -1218,3 +1252,72 @@ alternatives, evidence, and remaining risks. Prose is context, not execution pro
   - `bootstrap-publish.yml` is still in the repository and still dispatchable. It would
     fail on a re-run — 0.1.0 cannot be republished — but it should be deleted.
   - Trusted publishing is not yet configured, so `release.yml` has still never run.
+
+
+### first-run-scaffold-fixes — the scaffold's first contact with a real repository
+
+- **Result:** `npx @nsdesign/appcraft create` now succeeds into a cloned repository
+  without `--force`, and the app it produces passes its own `npm test` on the first
+  run. The generated app carries the checks its contract names, a `.gitignore` that
+  covers `node_modules`, and a README and licence.
+- **Rules applied:** `preflight-attested` and `worklog-decision-trail` — this pass is
+  recorded before the gate it changes is trusted. `evidence-over-assertion` — every
+  defect below was reproduced by running the CLI and each fix is evidenced by a
+  generated app, not by reading the diff. `verification-tier-preclassified` — tier 2
+  declared above before editing.
+- **Rejected alternatives:**
+  - *Raising the performance budgets.* The previous pass already recorded that the
+    `collection-branch-activation` budget fails on the run straight after
+    `npm install`, and that raising the number would hide it. It measures a real
+    interaction; the contention was the bug. `test:browser` now excludes the perf
+    specs and `test:browser:perf` runs them alone, which is what the separate script
+    with `--workers=1` was already for. The budgets themselves are unchanged.
+  - *Authoring a second copy of the checks under `starter/`.* Two copies in git is
+    the drift `check:routes` and the skills lock exist to prevent. They stay authored
+    in `scripts/`, allowlisted by `APP_SCOPED_SCRIPTS`, and are copied into an app at
+    generation exactly as the skills are.
+  - *Running the full contract gate against a fresh scaffold.* It would fail for the
+    one reason that proves nothing — that the user has not started. The gate is
+    dormant while the worklog says `Mode: starter` and says so on every run.
+  - *Keying that dormancy on changed files rather than on the worklog mode.*
+    Immediately after `create` into a fresh clone every scaffold file is untracked, so
+    "has anything changed" reads as "everything has", and the gate would fire before
+    the user typed a character.
+- **Evidence:**
+  - `node --test packages/cli/src/create.test.mjs` — 26 pass, 0 fail. Nine are new and
+    each names one defect below.
+  - Generated app, full gate: `APPCRAFT_CHROMIUM=… npm test` exits **0** — contract
+    gate dormant with reasons, typecheck clean, `15 passed` then `4 passed`. Before
+    this pass the same command on a fresh scaffold was `17 passed, 2 failed`.
+  - `npx playwright test --grep "browser perf:" --workers=1` passed 4/4 while the same
+    specs failed inside the default run, which is what identified contention rather
+    than the budgets as the cause.
+  - `create` into a directory holding only `.git`: succeeded, `.git/HEAD` untouched.
+    This also exposed a second defect — promotion used `rename`, which fails
+    `ENOTEMPTY` onto an existing directory — fixed by merging whenever the target
+    exists rather than only under `--force`.
+  - `create` into a directory with the user's own `README.md` and `LICENSE`: both
+    preserved verbatim. A fresh target gets both generated.
+  - `git add -A --dry-run` in a generated app with `node_modules` present: 0 paths
+    staged from it. Previously 1.
+  - Defects fixed, all found by running the published 0.1.0: the contract gate did not
+    ship (`AGENTS.md` routes to `npm run check:style-guide`; no generated app had that
+    script, or a `scripts/` directory); `.git` counted as "not empty"; the shipped
+    `.gitignore` omitted `node_modules` while `paths.mjs` explained the pack mechanism
+    as existing to prevent exactly that; `--no-skills` copied the skills anyway;
+    `check:preflight` tested for `Mode: seed`, a string generation never writes;
+    the routes banner named `scripts/generate-routes.mjs`, which no app has.
+- **Risks:**
+  - The dormancy switch is a single line in the worklog. An agent that never writes
+    `Mode: product` is never gated. `AGENTS.md` requires the flip and the dormant
+    output names it on every run, but nothing forces it — a stronger arming signal
+    (first edit under `src/app/`) is possible and was not built here.
+  - `check:projection-graph` and `check:style-guide` remain dormant in a generated app
+    until the schema and style-guide routes land their outputs. They are shipped and
+    wired, so they begin to bite the moment those files appear, but this pass proves
+    only that they run and resolve their inputs — not that they catch a real
+    violation in an app, which no app yet exists to produce.
+  - The perf budgets are now excluded from `test:browser`. A contributor who runs only
+    that script no longer sees them; `verify:final` and `npm test` still do.
+  - Nothing here is published. The fixes reach users only on the next release, and
+    `0.1.0` remains the version anyone installing today receives.

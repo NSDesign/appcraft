@@ -21,19 +21,41 @@ export const repoRoot = path.resolve(packageRoot, "../..");
 
 const packagedStarter = path.join(packageRoot, "templates/starter");
 const packagedSkills = path.join(packageRoot, "appcraft-skills");
+const packagedScripts = path.join(packageRoot, "appcraft-scripts");
+const packagedRoutes = path.join(packageRoot, "appcraft-routes.json");
 const repoStarter = path.join(repoRoot, "starter");
 const repoSkills = path.join(repoRoot, ".agents/skills");
+const repoScripts = path.join(repoRoot, "scripts");
+const repoRoutes = path.join(repoRoot, "docs/routes.json");
 
 /**
- * @returns {{ starter: string, skills: string, source: "packaged" | "repo" }}
+ * @returns {{
+ *   starter: string,
+ *   skills: string,
+ *   scripts: string,
+ *   routes: string,
+ *   source: "packaged" | "repo",
+ * }}
  */
 export function resolveTemplateSources() {
   if (existsSync(packagedStarter)) {
-    return { skills: packagedSkills, source: "packaged", starter: packagedStarter };
+    return {
+      routes: packagedRoutes,
+      scripts: packagedScripts,
+      skills: packagedSkills,
+      source: "packaged",
+      starter: packagedStarter,
+    };
   }
 
   if (existsSync(repoStarter)) {
-    return { skills: repoSkills, source: "repo", starter: repoStarter };
+    return {
+      routes: repoRoutes,
+      scripts: repoScripts,
+      skills: repoSkills,
+      source: "repo",
+      starter: repoStarter,
+    };
   }
 
   throw new Error(
@@ -66,3 +88,28 @@ export const excludedFromGeneration = new Set([
  * commits its own `node_modules`.
  */
 export const GITIGNORE_PACKED_NAME = "gitignore";
+
+/**
+ * The checks a generated app carries, and the registry they read.
+ *
+ * appcraft's pitch is that an app is "gated by checks that live in your repository —
+ * not by this CLI at a distance". That is only true if the checks are actually in the
+ * repository: `AGENTS.md` routes the style-guide gate to `npm run check:style-guide`,
+ * and until these shipped, no generated app had such a script.
+ *
+ * The list is an allowlist rather than "copy scripts/", because most of this
+ * repository's checks gate appcraft itself — skills locks, route generation, starter
+ * docs — and mean nothing inside an app.
+ */
+export const APP_SCOPED_SCRIPTS = [
+  "app-context.mjs",
+  "check-preflight.mjs",
+  "check-projection-graph.mjs",
+  "check-style-guide.mjs",
+  "check-worklog.mjs",
+  "projection-graph.mjs",
+  "routes.mjs",
+];
+
+/** The route registry, which `check:preflight` reads to map changed files to routes. */
+export const ROUTE_REGISTRY = "docs/routes.json";

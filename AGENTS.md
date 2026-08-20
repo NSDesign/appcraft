@@ -65,7 +65,7 @@ axis, **application routes**, applies to work inside a generated app and is rend
 into that app's own `AGENTS.md`; both live in the same registry.
 
 <!-- appcraft:routes:start -->
-<!-- Generated from docs/routes.json by scripts/generate-routes.mjs. Do not edit by hand. -->
+<!-- Generated from the appcraft route registry (docs/routes.json). Do not edit by hand. -->
 
 | Route id | Surface | Plan | Implementation | Verification |
 |---|---|---|---|---|

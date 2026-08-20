@@ -7,35 +7,43 @@
  * attestation exists, declares a tier and reason, and that its declared routes
  * are consistent with the files actually changed.
  */
-import { readFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import path from "node:path";
 
+import {
+  changedFiles,
+  isStarterMode,
+  readWorklog,
+  reportStarterMode,
+  resolveAppRoot,
+} from "./app-context.mjs";
 import { loadRegistry, requiredRoutes } from "./routes.mjs";
+
+const appRoot = resolveAppRoot();
 
 // Route-to-path mapping comes from docs/routes.json, not from a copy kept here.
 // It used to be a literal in this file, which is precisely the drift the delta map
 // asks for a single registry to design out.
 let registry;
 try {
-  registry = loadRegistry();
+  registry = loadRegistry(path.join(appRoot, "docs/routes.json"));
 } catch (error) {
   console.error(`check:preflight FAILED — ${error.message}`);
   process.exit(1);
 }
 
-let worklog;
-try {
-  worklog = readFileSync("docs/agent-worklog.md", "utf8");
-} catch {
+const found = readWorklog(appRoot);
+if (!found) {
   console.error("check:preflight FAILED — docs/agent-worklog.md is missing.");
   process.exit(1);
 }
 
-if (/^Mode:\s*seed\s*$/m.test(worklog)) {
-  console.error(
-    "check:preflight FAILED — worklog still declares 'Mode: seed'. Replace it with a real decision trail.",
-  );
-  process.exit(1);
+const worklog = found.text;
+
+// Dormant until the worklog says the app is being built rather than scaffolded.
+// This used to test for `Mode: seed`, a string generation never writes — so the
+// placeholder it was meant to catch always passed straight through.
+if (isStarterMode(worklog)) {
+  reportStarterMode("check:preflight");
 }
 
 const passes = [...worklog.matchAll(/^-\s+pass:\s*(.+)$/gm)];
@@ -63,16 +71,8 @@ const declared = (lastBlock.match(/^\s+routes:\s*\[(.*?)\]/m)?.[1] ?? "")
   .map((s) => s.trim())
   .filter(Boolean);
 
-let changed = [];
-try {
-  // Tracked modifications plus new files. `git diff` alone misses untracked paths,
-  // which would let a pass that only adds files declare no routes at all — the
-  // easiest way to slip past the gate, and the most likely shape for a new surface.
-  const tracked = execSync("git diff --name-only HEAD", { encoding: "utf8" });
-  const untracked = execSync("git ls-files --others --exclude-standard", { encoding: "utf8" });
-
-  changed = [...new Set(`${tracked}\n${untracked}`.split("\n").map((s) => s.trim()).filter(Boolean))];
-} catch {
+const changed = changedFiles(appRoot);
+if (changed === undefined) {
   console.log("check:preflight — no git history to compare; attestation shape OK.");
   process.exit(0);
 }

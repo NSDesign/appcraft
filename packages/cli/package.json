@@ -11,6 +11,8 @@
   "files": [
     "LICENSE",
     "README.md",
+    "appcraft-routes.json",
+    "appcraft-scripts",
     "appcraft-skills",
     "bin",
     "src",
