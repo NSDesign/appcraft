@@ -119,3 +119,9 @@ attestation's `skip` list — it is never counted as coverage.
 result, the contract rules applied, rejected alternatives, evidence, and remaining
 risks. **Prose is context, not execution proof** — a verification claim cites the
 command that produced it.
+
+`npm run check:contract` enforces this — preflight attestation, decision trail, style
+guide record, projection graph — and it is **dormant while the worklog says
+`Mode: starter`**. A scaffold nobody has worked on has nothing to attest. Replace that
+line with `Mode: product` when the first product pass begins; from then on every pass
+must attest before editing and record its decision before the gate will pass.

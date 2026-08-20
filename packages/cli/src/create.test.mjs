@@ -340,20 +340,91 @@ test("a README and licence the user already chose are left alone", async () => {
   });
 });
 
-test("an app with no README or licence is given both", async () => {
+test("the app is not given appcraft's licence, or a licence at all, by default", async () => {
+  // The starter carries appcraft's MIT because the starter is part of appcraft.
+  // Copying it into someone's product would have every generated app grant rights
+  // its author never agreed to — under a blank copyright line, on behalf of nobody.
+  await withTempDir(async (dir) => {
+    await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "demo" });
+
+    const manifest = JSON.parse(await fs.readFile(path.join(dir, "demo/package.json"), "utf8"));
+
+    assert.equal(manifest.license, "UNLICENSED");
+    assert.equal(
+      await pathExistsForTest(path.join(dir, "demo/LICENSE")),
+      false,
+      "A licence nobody chose must not be written.",
+    );
+  });
+});
+
+test("an app that declares MIT gets the text, with a real copyright holder", async () => {
+  await withTempDir(async (dir) => {
+    await generateAppcraftApp({
+      author: "Ada Lovelace",
+      cwd: dir,
+      license: "MIT",
+      name: "demo",
+      targetDir: "demo",
+    });
+
+    const licence = await fs.readFile(path.join(dir, "demo/LICENSE"), "utf8");
+    const manifest = JSON.parse(await fs.readFile(path.join(dir, "demo/package.json"), "utf8"));
+
+    assert.equal(manifest.license, "MIT");
+    assert.match(licence, /MIT License/);
+    assert.match(licence, /Copyright \(c\) \d{4} Ada Lovelace/);
+  });
+});
+
+test("a licence we cannot reproduce is recorded but never invented", async () => {
+  await withTempDir(async (dir) => {
+    await generateAppcraftApp({
+      cwd: dir,
+      license: "Apache-2.0",
+      name: "demo",
+      targetDir: "demo",
+    });
+
+    const manifest = JSON.parse(await fs.readFile(path.join(dir, "demo/package.json"), "utf8"));
+
+    assert.equal(manifest.license, "Apache-2.0");
+    assert.equal(
+      await pathExistsForTest(path.join(dir, "demo/LICENSE")),
+      false,
+      "Writing licence text we cannot reproduce exactly is worse than writing none.",
+    );
+  });
+});
+
+test("the README describes the app, not the scaffold that made it", async () => {
+  // What `create` produces is a scaffold; what the user is about to build is a
+  // product, and the README is the product's front door. One that opens by
+  // explaining its own generator describes the scaffolding rather than the building.
   await withTempDir(async (dir) => {
     await generateAppcraftApp({ cwd: dir, name: "demo", targetDir: "demo" });
 
     const readme = await fs.readFile(path.join(dir, "demo/README.md"), "utf8");
-    const licence = await fs.readFile(path.join(dir, "demo/LICENSE"), "utf8");
-    const manifest = JSON.parse(await fs.readFile(path.join(dir, "demo/package.json"), "utf8"));
+    // `APPCRAFT_CHROMIUM` is exempt: it is how you run *this app's* tests on a
+    // machine that already has a browser, so it belongs under Verify. What must not
+    // appear above the last section is prose about appcraft itself.
+    const opening = readme
+      .slice(0, readme.indexOf("## How this app is built"))
+      .replaceAll("APPCRAFT_CHROMIUM", "");
 
     assert.match(readme, /^# demo$/m);
-    assert.match(licence, /MIT License/);
+    assert.doesNotMatch(
+      opening,
+      /appcraft/i,
+      "The app's own sections must be about the app; appcraft belongs in one section at the end.",
+    );
+    assert.match(readme, /## How this app is built/);
+
+    const manifest = JSON.parse(await fs.readFile(path.join(dir, "demo/package.json"), "utf8"));
     assert.equal(
-      manifest.license,
-      "MIT",
-      "The manifest names a licence; the repository must carry its text.",
+      manifest.description,
+      undefined,
+      "A description of the scaffold is not a description of the product.",
     );
   });
 });

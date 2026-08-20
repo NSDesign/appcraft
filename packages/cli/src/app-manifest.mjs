@@ -5,6 +5,13 @@
  * `appcraft-starter`, and depending on `@nsdesign/appcraft-core` at `"*"`, which the
  * monorepo resolves locally. Every one of those is wrong for a standalone app — a
  * `"*"` range in particular would install whatever npm felt like, or nothing.
+ *
+ * Two more fields describe the scaffold rather than the product, and this is where
+ * that distinction is drawn: the app being built is not "an appcraft application"
+ * any more than a house is a scaffold, and its licence is its owner's decision. The
+ * starter carries appcraft's own MIT because the starter is part of appcraft;
+ * copying it into someone's product would have every app ever generated grant rights
+ * its author never agreed to.
  */
 
 /** npm's rules, applied so a folder name cannot produce an unpublishable manifest. */
@@ -44,7 +51,7 @@ const CONTRACT_GATE_ORDER = [
 
 /**
  * @param {object} starterManifest  the starter's package.json, parsed
- * @param {{ name: string, coreVersion: string }} options
+ * @param {{ name: string, coreVersion: string, license?: string }} options
  */
 export function createAppManifest(starterManifest, options) {
   const name = sanitisePackageName(options.name);
@@ -73,7 +80,7 @@ export function createAppManifest(starterManifest, options) {
     name,
     version: "0.1.0",
     private: true,
-    description: `An appcraft application.`,
+    license: normaliseLicence(options.license),
     scripts,
     dependencies,
   };
@@ -81,7 +88,22 @@ export function createAppManifest(starterManifest, options) {
   // Workspace-only fields. A generated app is not part of our monorepo.
   delete manifest.workspaces;
 
+  // The starter's description is a description *of the starter*. Leaving it would
+  // hand every generated app the same sentence about the tool that made it; an
+  // absent description is a prompt to write one, which is what it should be.
+  delete manifest.description;
+
   return manifest;
+}
+
+/**
+ * npm's value for "no rights granted" is `UNLICENSED`, and that is the only honest
+ * default: the user has not chosen a licence, so appcraft must not choose one for
+ * them. `--license` records the choice when they have made it.
+ */
+export function normaliseLicence(license) {
+  const value = String(license ?? "").trim();
+  return value === "" ? "UNLICENSED" : value;
 }
 
 /**

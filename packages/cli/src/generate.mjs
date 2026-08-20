@@ -10,6 +10,7 @@
  * The sibling matters: `rename` is atomic only within a filesystem, and a staging
  * directory in the OS temp dir can easily be on another one.
  */
+import { execSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -88,6 +89,8 @@ async function validateStaged(stagingDir) {
  *   force?: boolean,
  *   coreVersion?: string,
  *   skills?: boolean,
+ *   license?: string,
+ *   author?: string,
  * }} options
  */
 export async function generateAppcraftApp(options) {
@@ -144,6 +147,7 @@ export async function generateAppcraftApp(options) {
       path.join(stagingDir, "package.json"),
       createAppManifest(starterManifest, {
         coreVersion: coreVersionRange(coreVersion),
+        license: options.license,
         name: options.name,
       }),
     );
@@ -153,21 +157,26 @@ export async function generateAppcraftApp(options) {
     //    user writing a word.
     await fs.writeFile(path.join(stagingDir, "docs/agent-worklog.md"), starterWorklog());
 
-    // 6. The two files every repository is expected to have. The manifest declares a
-    //    licence, so the app has to carry its text; without this a generated app
-    //    claims MIT and ships nothing that grants it.
-    //
-    //    Written only when the target has none. A repository created on GitHub with a
-    //    README and a licence chosen is the ordinary starting point, and those are
-    //    the user's answers — a scaffolder that overwrites them has destroyed the
-    //    first two decisions they made about their own project.
-    for (const [file, contents] of [
-      ["README.md", () => appReadme(options.name)],
-      ["LICENSE", mitLicence],
-    ]) {
-      if (!(await pathExists(path.join(targetDir, file)))) {
-        await fs.writeFile(path.join(stagingDir, file), contents());
-      }
+    // 6. The app's own front matter — its README, and its licence if it declared
+    //    one. Both belong to the product being built rather than to the scaffold, so
+    //    neither describes appcraft and neither is written over something the
+    //    repository already has: a repo created on GitHub with a README and a licence
+    //    chosen is the ordinary starting point, and those are the user's answers.
+    if (!(await pathExists(path.join(targetDir, "README.md")))) {
+      await fs.writeFile(path.join(stagingDir, "README.md"), appReadme(options.name));
+    }
+
+    // Only MIT is written out, and only when the app asked for it. Any other SPDX id
+    // is recorded in the manifest and left for the user to supply the text — writing
+    // a licence we cannot reproduce exactly would be worse than writing none.
+    if (
+      /^mit$/i.test(options.license ?? "") &&
+      !(await pathExists(path.join(targetDir, "LICENSE")))
+    ) {
+      await fs.writeFile(
+        path.join(stagingDir, "LICENSE"),
+        mitLicence(options.author ?? gitConfiguredAuthor(cwd)),
+      );
     }
 
     await validateStaged(stagingDir);
@@ -263,88 +272,87 @@ function appAxisRegistry(registry) {
 }
 
 /**
- * The app's README.
+ * The app's README — about the app, not about appcraft.
  *
- * Deliberately short and entirely about *this* app: what to run, what the folders
- * are, and how the contract gate behaves. Explaining appcraft belongs in appcraft's
- * own README, which the reader can follow the link to.
+ * The distinction matters more than it looks. What `create` produces is a scaffold;
+ * what the user is about to build is a product, and the README is the product's front
+ * door. A README that opens by explaining the tool that generated it describes the
+ * scaffolding rather than the building, and the first thing the user has to do is
+ * delete it.
+ *
+ * So: their name, a line for them to write, and the commands they will actually run.
+ * How the app is built is one short section at the bottom pointing at `AGENTS.md`,
+ * which is where the contract already lives and where an agent already reads.
  */
 function appReadme(name) {
   return `# ${name}
 
-An [appcraft](https://www.npmjs.com/package/@nsdesign/appcraft) application.
+<!-- One sentence on what this app does. This file is yours; replace as you go. -->
 
-## Getting started
+## Develop
 
 \`\`\`bash
 npm install
-npx playwright install --with-deps   # first run only; the gate drives a real browser
+npx playwright install --with-deps   # first run only; the tests drive a real browser
 npm run dev
 \`\`\`
 
-If the machine already provides a Chromium that Playwright did not install — a CI
-image, a sandbox, a distribution package — point the suite at it instead of
+## Build
+
+\`\`\`bash
+npm run build     # typecheck, then build for production
+npm run preview   # serve the production build locally
+\`\`\`
+
+## Verify
+
+\`\`\`bash
+npm test          # the full gate
+npm run verify:quick   # typecheck only, for the inner loop
+\`\`\`
+
+If this machine already provides a Chromium that Playwright did not install — a CI
+image, a sandbox, a distribution package — point the suite at it rather than
 downloading another:
 
 \`\`\`bash
 APPCRAFT_CHROMIUM=/path/to/chromium npm test
 \`\`\`
 
-## Scripts
-
-| Script | What it does |
-|---|---|
-| \`npm run dev\` | Start the Vite dev server. |
-| \`npm run build\` | Typecheck and build for production. |
-| \`npm run preview\` | Serve the production build locally. |
-| \`npm run typecheck\` | \`tsc --noEmit\`. |
-| \`npm run check:contract\` | The contract gate: preflight, worklog, style guide, projection graph. |
-| \`npm run test:browser\` | The Playwright suite, without the performance budgets. |
-| \`npm run test:browser:perf\` | The performance budgets, run alone so contention cannot skew them. |
-| \`npm test\` | Everything above, in order. |
-
 ## Layout
 
 \`\`\`
-AGENTS.md            The app contract, with the routing table for product work.
-docs/appcraft/       The route documents the contract sends an agent to.
-docs/agent-worklog.md  Preflight attestations and the decision trail.
-docs/routes.json     The route registry check:preflight reads.
-scripts/             The contract checks, runnable in this repository.
-.agents/skills/      Workflow skills, so the process fires without configuration.
-src/app/             App schema, entry point, and theme.
-e2e/                 Playwright specs proving the projection invariants.
+src/app/     The app: schema, entry point, theme.
+e2e/         Specs proving the app's projection invariants in a browser.
+docs/        This app's documentation, including its decision trail.
 \`\`\`
 
-## The contract gate
+## How this app is built
 
-\`npm run check:contract\` is dormant while \`docs/agent-worklog.md\` says
-\`Mode: starter\` — a scaffold nobody has worked on has nothing to attest. Replacing
-that with \`Mode: product\` arms it, and from then on every pass must record a
-preflight attestation and a decision-trail entry before it can pass.
+Scaffolded with [appcraft](https://www.npmjs.com/package/@nsdesign/appcraft), which
+supplies the build setup, the verification gate, and a contract for working on this
+app with a coding agent. That contract is \`AGENTS.md\`; the routes it sends an agent
+to are under \`docs/appcraft/\`, and \`scripts/\` holds the checks that enforce it.
 
-## Working with an agent
-
-Open this folder in Claude Code, Codex, Cursor, or another agent and describe what
-you want built. The agent reads \`AGENTS.md\`, selects the matching routes, and is
-gated by the checks in this repository.
-
-## Licence
-
-[MIT](LICENSE).
+Open this folder in an agent and describe what you want built — it reads
+\`AGENTS.md\` and follows from there.
 `;
 }
 
 /**
- * MIT, matching the licence the generated manifest declares. A manifest that names a
- * licence the repository does not carry is a claim with nothing behind it.
+ * MIT, for an app whose author asked for it.
+ *
+ * Never written by default. appcraft is MIT; the app someone builds with it is not,
+ * unless they say so. Generating this file unasked would have every app ever
+ * scaffolded grant rights its author never agreed to — and with a blank copyright
+ * line, grant them on behalf of nobody.
  */
-function mitLicence() {
-  const year = new Date().getFullYear();
+function mitLicence(holder, year = new Date().getFullYear()) {
+  const name = String(holder ?? "").trim() || "<copyright holder>";
 
   return `MIT License
 
-Copyright (c) ${year}
+Copyright (c) ${year} ${name}
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -364,6 +372,19 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 `;
+}
+
+/** The git-configured name, when there is one, for a generated copyright line. */
+function gitConfiguredAuthor(cwd) {
+  try {
+    return execSync("git config user.name", {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "";
+  }
 }
 
 function starterWorklog() {

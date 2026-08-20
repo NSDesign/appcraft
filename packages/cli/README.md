@@ -33,7 +33,26 @@ distance.
 - `docs/routes.json` — the app-axis route registry `check:preflight` reads.
 - `e2e/` — a Playwright suite that proves the projection invariants in a session.
 - `docs/agent-worklog.md` — a fresh decision trail, in starter mode.
-- `README.md` and `LICENSE` — unless the repository already has them.
+- `README.md` — about the app you are building, unless the repository has one.
+- `.gitignore` — for the app: `node_modules`, build output, test output, env files.
+
+## The app is not the scaffold
+
+What `create` produces is a scaffold. What you build with it is a product, and three
+files belong to the product rather than to appcraft:
+
+- **`README.md`** opens with your app's name and a line for you to write, and covers
+  the commands you will actually run. How the app is built is one section at the
+  bottom pointing at `AGENTS.md`.
+- **`LICENSE`** is not written, and `package.json` records `UNLICENSED`. appcraft is
+  MIT because appcraft is MIT; your app's licence is your decision. Pass
+  `--license MIT --author "Your Name"` to have it written out, or any other SPDX id
+  to record the choice and supply the text yourself.
+- **`.gitignore`** covers what your app produces — dependencies, build output, test
+  output, env files — not what this repository produces.
+
+`package.json` carries no description for the same reason: a sentence about the tool
+that generated your app is not a description of your app.
 
 ## The contract gate
 
@@ -56,6 +75,8 @@ edit teaches people to ignore it. Replacing that line with `Mode: product` arms 
 | `--yes`, `-y` | Accept defaults; never prompt. |
 | `--force`, `-f` | Generate into a non-empty directory, merging rather than replacing. |
 | `--no-install` | Skip dependency installation. |
+| `--license <spdx>` | Licence for the app. Default `UNLICENSED`; MIT is written out in full. |
+| `--author <name>` | Copyright holder for a generated licence. Defaults to your git `user.name`. |
 | `--no-skills` | Do not copy the workflow skills into the app. |
 
 ## npm only

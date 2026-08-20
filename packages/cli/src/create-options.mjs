@@ -18,6 +18,12 @@ Usage
 Options
   --name <name>        Package name. Defaults to the directory name.
   --core-version <v>   Version of @nsdesign/appcraft-core to depend on.
+  --license <spdx>     Licence for the app you are about to build. Default
+                       UNLICENSED — appcraft's own licence is not yours to
+                       inherit. MIT is written out in full; any other SPDX id
+                       is recorded in package.json for you to supply the text.
+  --author <name>      Copyright holder for a generated licence. Defaults to
+                       your git user.name.
   --agent <name>       Also install the skills into an agent via the skills CLI.
                        Repeatable. Skills are always copied into the app itself.
   --yes, -y            Accept defaults; never prompt.
@@ -30,6 +36,7 @@ Examples
   npx @nsdesign/appcraft create my-app
   npx @nsdesign/appcraft create . --yes
   npx @nsdesign/appcraft create my-app --agent claude-code
+  npx @nsdesign/appcraft create my-app --license MIT --author "Your Name"
 `;
 
 function readOptionValue(argv, index, optionName) {
@@ -45,10 +52,12 @@ function readOptionValue(argv, index, optionName) {
 export function parseCreateArgs(argv) {
   const options = {
     agent: [],
+    author: undefined,
     coreVersion: undefined,
     force: false,
     help: false,
     install: true,
+    license: undefined,
     name: undefined,
     skills: true,
     targetDir: undefined,
@@ -83,6 +92,14 @@ export function parseCreateArgs(argv) {
         continue;
       case "--core-version":
         options.coreVersion = readOptionValue(argv, index, "--core-version");
+        index += 1;
+        continue;
+      case "--license":
+        options.license = readOptionValue(argv, index, "--license");
+        index += 1;
+        continue;
+      case "--author":
+        options.author = readOptionValue(argv, index, "--author");
         index += 1;
         continue;
       case "--agent":

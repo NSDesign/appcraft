@@ -65,7 +65,9 @@ async function runCreate(argv, context) {
     name: options.name,
     skills: options.skills,
     targetDir: options.targetDir,
+    ...(options.author ? { author: options.author } : {}),
     ...(options.coreVersion ? { coreVersion: options.coreVersion } : {}),
+    ...(options.license ? { license: options.license } : {}),
   });
 
   write(context, "");
@@ -101,6 +103,17 @@ async function runCreate(argv, context) {
 
   // Print only commands the generated app can actually run. A scaffolder whose very
   // first instruction fails has spent the user's trust before they wrote a line.
+  // A manifest naming a licence whose text is not in the repository is a claim with
+  // nothing behind it — the same defect as the inherited MIT, arrived at differently.
+  if (options.license && !/^(mit|unlicensed)$/i.test(options.license)) {
+    write(context, "");
+    write(
+      context,
+      `note: package.json records "${options.license}". Add the licence text as LICENSE — ` +
+        "only MIT is written out for you.",
+    );
+  }
+
   write(context, "");
   write(context, "Next steps:");
   if (result.relativeTargetDir !== ".") {
