@@ -39,11 +39,34 @@ replaces.
 - `docs/design/appcraft-inheritance-delta-map.md` — what is inherited, extended,
   swapped, absorbed, deleted, or new relative to Toolcraft.
 - `docs/decision-contract.md` — rule ids and levels.
+- `docs/verification.md` — tiers, commands, and what each verification layer can
+  actually prove.
+
+## Verification
+
+```
+npm run verify:quick    typecheck, lint, boundaries, unit
+npm run test:browser    Playwright, including the acceptance-matrix gate
+npm run verify:final    the full gate
+```
+
+`e2e/appcraft-acceptance.ts` declares which contract rule each browser test
+discharges and which helpers it must use to do so; `e2e/appcraft-acceptance.spec.ts`
+fails when a row points at a test that does not exist, cites a rule the contract does
+not define, or names a test that reaches its assertion without the declared helper.
+
+`.agents/skills` carries the workflow skills, content-hashed in `skills-lock.json`
+and verified by `npm run check:skills`.
 
 ## Status
 
 Design frozen; implementation not started. Build order is field scale → collection
 scale → panel scale → viewmodel scale.
+
+The enforcement surface is live ahead of the implementation: the acceptance and
+performance matrices are checked on every run, while the specs that need a live page
+are skipped until `src/app` renders a surface graph. Skipped is reported as skipped —
+those invariants are not yet proven.
 
 ## Licence
 

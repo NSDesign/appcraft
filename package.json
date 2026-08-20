@@ -1,28 +1,49 @@
 {
-  "name": "appcraft",
+  "name": "appcraft-monorepo",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Agent-oriented framework for complex applications. Extends the Toolcraft methodology; built on Astryx and StyleX.",
+  "description": "The appcraft monorepo: the framework library, the CLI, and the starter it generates.",
   "license": "MIT",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p packages/core && tsc --noEmit -p starter",
     "lint": "eslint .",
-    "check:boundaries": "depcruise src --config .dependency-cruiser.cjs",
+    "check:boundaries": "depcruise packages starter --config .dependency-cruiser.cjs",
+    "check:projection-graph": "node scripts/check-projection-graph.mjs",
+    "check:routes": "node scripts/generate-routes.mjs",
+    "check:starter-docs": "node scripts/check-starter-docs.mjs",
+    "check:style-guide": "node scripts/check-style-guide.mjs",
     "check:docs": "node scripts/check-contract-docs.mjs",
+    "check:worklog": "node scripts/check-worklog.mjs",
     "check:preflight": "node scripts/check-preflight.mjs",
+    "check:skills": "node scripts/check-skills.mjs",
+    "routes:generate": "node scripts/generate-routes.mjs --write",
+    "skills:lock": "node scripts/check-skills.mjs --write",
+    "test:scripts": "node --test scripts/*.test.mjs && npm run test:cli",
+    "test:cli": "npm test -w @nsdesign/appcraft",
     "test:unit": "vitest run",
-    "verify:quick": "npm run typecheck && npm run lint && npm run check:boundaries && npm run test:unit",
-    "verify:final": "npm run check:docs && npm run check:preflight && npm run verify:quick",
+    "test:browser": "npm run test:browser -w appcraft-starter",
+    "test:browser:perf": "npm run test:browser:perf -w appcraft-starter",
+    "verify:quick": "npm run typecheck && npm run lint && npm run check:boundaries && npm run check:projection-graph && npm run test:scripts && npm run test:unit",
+    "verify:ui": "npm run test:browser",
+    "verify:perf": "npm run test:browser:perf",
+    "verify:final": "npm run check:skills && npm run check:routes && npm run check:starter-docs && npm run check:style-guide && npm run check:docs && npm run check:worklog && npm run check:preflight && npm run verify:quick && npm run test:browser",
     "test": "npm run verify:final"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@playwright/test": "^1.49.0",
     "@types/node": "^22.0.0",
     "dependency-cruiser": "^16.0.0",
     "eslint": "^9.0.0",
     "eslint-plugin-boundaries": "^5.0.0",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.0.0",
+    "vite": "^6.0.0",
     "vitest": "^2.0.0"
-  }
+  },
+  "workspaces": [
+    "packages/*",
+    "starter"
+  ]
 }

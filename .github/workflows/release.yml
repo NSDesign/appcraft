@@ -1,0 +1,78 @@
+# Publishes @nsdesign/appcraft and @nsdesign/appcraft-core.
+#
+# Uses npm trusted publishing (OIDC) rather than a stored NPM_TOKEN: the job mints a
+# short-lived credential per run, and npm records provenance — which matters for a
+# package whose entire pitch is verifiability.
+#
+# This workflow CANNOT perform the first publish of either package. npm requires a
+# trusted publisher's package to already exist on the registry — "Package must exist:
+# The package you're configuring must already exist on the npm registry"
+# (docs/lib/content/commands/npm-trust.md). OIDC therefore cannot bootstrap a new name,
+# and the first version of each package must be published manually.
+#
+# Before the first run:
+#   1. Enable account-level 2FA on npmjs.com. Trusted publishing requires it, and
+#      granular access tokens with the bypass-2FA option are not accepted.
+#   2. Publish 0.1.0 of each package once, either by hand from a logged-in machine:
+#        npm publish --access public -w @nsdesign/appcraft-core
+#        npm publish --access public -w @nsdesign/appcraft
+#      or by running .github/workflows/bootstrap-publish.yml, which does the same
+#      with a short-lived token held in GitHub's secret store. Delete that workflow
+#      once it has run.
+#   3. On each package's npm settings page, add a trusted publisher:
+#      organization/user NSDesign, repository appcraft, workflow `release.yml`
+#      (the filename, not the path), and grant it publish.
+#   4. Bump the version, then tag: git tag v0.1.1 && git push --tags
+#
+# The @nsdesign scope needs no organization: "When you sign up for an npm user account
+# or create an organization, you are granted a scope that matches your user or
+# organization name."
+#
+# Scoped packages are private by default, so every publish here passes --access public.
+# Without it npm refuses and asks for a paid plan, which reads as a billing problem
+# rather than a flag you forgot.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # required for trusted publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # Node 22 bundles npm 10.9.x, and OIDC publishing needs npm >= 11.5.1. Without
+      # this the publish steps fail at the last moment, having already run the gate.
+      - name: Upgrade npm to a version that can publish over OIDC
+        run: |
+          npm install -g npm@latest
+          npm --version
+
+      - run: npm ci
+
+      - name: Install browsers for the verification gate
+        run: npx playwright install --with-deps chromium
+
+      # The gate runs before publishing, not after. A package that fails its own
+      # checks should never reach the registry.
+      - run: npm test
+
+      # Publish the library first: the CLI writes an exact dependency on it, so an app
+      # generated the moment the CLI lands must find a version that already exists.
+      - name: Publish @nsdesign/appcraft-core
+        run: npm publish --access public --provenance -w @nsdesign/appcraft-core
+
+      - name: Publish @nsdesign/appcraft
+        run: npm publish --access public --provenance -w @nsdesign/appcraft

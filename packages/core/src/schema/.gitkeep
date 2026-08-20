@@ -1,0 +1,19 @@
+# schema — reserved, deliberately empty
+
+This directory is empty on purpose, and this file exists only because git tracks
+files rather than directories. It is not an unfinished source file.
+
+What belongs here is the Zod validation layer: schemas describing the *active*
+variant of a projection, and the `inactive-branches-not-validated` boundary that
+keeps an invalid inactive branch from gating a valid document. Today that invariant
+is proven at the store and in the browser suite; the schema module is where it gets
+its own home once validation is more than the fixture needs.
+
+Zod must not leak past this layer — `facade-owns-state` forbids product code from
+importing it directly.
+
+Governed by the `schema` route (docs/routes.json). The boundary rules that apply are
+enforced, not described: `boundaries/element-types` in eslint.config.js and the
+matching rules in .dependency-cruiser.cjs.
+
+Delete this file once real source lands here.

@@ -25,7 +25,7 @@ Toolcraft's catalogue): if the rule is checkable *without* product knowledge it 
 |---|---|---|
 | `surfaces-declared-not-composed` | invariant | Product code declares surfaces; the framework owns composition, bootstrap, routes, and global styles. |
 | `facade-owns-state` | invariant | All state reads and writes pass through the appcraft facade. Zod, Jotai, Immer must not leak into product code. |
-| `kernel-dependency-free` | invariant | `src/appcraft/kernel` imports nothing from store, surfaces, controls, Astryx, Jotai, or React. |
+| `kernel-dependency-free` | invariant | `packages/core/src/kernel` imports nothing from store, surfaces, controls, Astryx, Jotai, or React. |
 | `retain-inactive-branches` | invariant | A discriminant switch never deletes another branch's document or authored-inactive fields. |
 | `evict-derived-state` | invariant | Derived state is dropped for inactive branches and rebuilt on activation. It is never persisted. |
 | `field-classification-required` | invariant | Every branch field is classified document, authored-inactive, or derived. |
@@ -35,7 +35,7 @@ Toolcraft's catalogue): if the rule is checkable *without* product knowledge it 
 | `panel-discriminant-persists` | invariant | Reopening an app restores the last active tab or tool. Derived state still rebuilds. |
 | `envelope-versioned` | invariant | Persisted envelopes carry a `version`. Migrations are forward-only. |
 | `undo-switch-separate-entry` | invariant | A discriminant switch is its own undo entry, separate from subsequent edits. |
-| `app-agnostic-core` | invariant | Nothing in `src/appcraft` is specific to a single application. Apply the scope litmus test. |
+| `app-agnostic-core` | invariant | Nothing in `packages/core/src` is specific to a single application. Apply the scope litmus test. |
 | `layout-archetypes-only` | invariant | Surfaces compose from curated archetypes (master-detail, tabbed-section, canvas, inspector). Free-form declarative layout is not permitted. |
 | `astryx-before-custom-control` | default | Use Astryx components before authoring a custom control. |
 | `compound-controls-declared` | default | A compound or variant control is declared as a field-scale projection, not hand-rolled. |
@@ -43,6 +43,7 @@ Toolcraft's catalogue): if the rule is checkable *without* product knowledge it 
 | `transport-not-a-projection` | default | Playhead and transport evaluation is a derived sampler across branches, not a projection. Track and key structure are projections. |
 | `figma-structure-source-of-truth` | invariant | When a Figma URL is supplied, read node, layer, component, variant, text, variable, style, and asset structure via MCP. Never implement from a screenshot or by eye. |
 | `figma-variables-to-tokens` | default | Map Figma variables and styles onto StyleX theme tokens rather than literal values. |
+| `theme-tokens-not-literals` | invariant | Product code reads Astryx theme tokens. It does not hard-code colour, font-family or font-size values. Checkable without product knowledge, so invariant by this catalogue's own derivation test. |
 | `verification-tier-preclassified` | invariant | Classify the verification tier before editing, by blast radius rather than line count. |
 | `preflight-attested` | invariant | Write the preflight attestation before editing implementation files. |
 | `worklog-decision-trail` | invariant | Maintain a decision trail. Prose is context, not execution proof. |

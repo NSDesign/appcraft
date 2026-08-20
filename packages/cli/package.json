@@ -1,0 +1,42 @@
+{
+  "name": "@nsdesign/appcraft",
+  "version": "0.1.0",
+  "description": "Create appcraft apps from the command line. Scaffolds the contract, skills, and verification gate an agent needs to build a complex app.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "appcraft": "./bin/appcraft.mjs",
+    "create-appcraft-app": "./bin/create-appcraft-app.mjs"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "appcraft-skills",
+    "bin",
+    "src",
+    "templates"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20.10"
+  },
+  "scripts": {
+    "prepack": "node scripts/prepare-pack.mjs",
+    "postpack": "node scripts/clean-pack.mjs",
+    "test": "node --test src/*.test.mjs"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NSDesign/appcraft.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/NSDesign/appcraft#readme",
+  "bugs": {
+    "url": "https://github.com/NSDesign/appcraft/issues"
+  }
+}

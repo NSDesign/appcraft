@@ -10,15 +10,18 @@
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 
-const ROUTE_PATHS = {
-  kernel: /^src\/appcraft\/kernel\//,
-  schema: /^src\/appcraft\/schema\//,
-  store: /^src\/appcraft\/store\//,
-  surfaces: /^src\/appcraft\/surfaces\//,
-  controls: /^src\/appcraft\/controls\//,
-  enforcement: /^(scripts\/|\.dependency-cruiser|eslint|package\.json|tsconfig)/,
-  docs: /^(docs\/|AGENTS\.md)/,
-};
+import { loadRegistry, requiredRoutes } from "./routes.mjs";
+
+// Route-to-path mapping comes from docs/routes.json, not from a copy kept here.
+// It used to be a literal in this file, which is precisely the drift the delta map
+// asks for a single registry to design out.
+let registry;
+try {
+  registry = loadRegistry();
+} catch (error) {
+  console.error(`check:preflight FAILED — ${error.message}`);
+  process.exit(1);
+}
 
 let worklog;
 try {
@@ -62,18 +65,30 @@ const declared = (lastBlock.match(/^\s+routes:\s*\[(.*?)\]/m)?.[1] ?? "")
 
 let changed = [];
 try {
-  changed = execSync("git diff --name-only HEAD", { encoding: "utf8" })
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  // Tracked modifications plus new files. `git diff` alone misses untracked paths,
+  // which would let a pass that only adds files declare no routes at all — the
+  // easiest way to slip past the gate, and the most likely shape for a new surface.
+  const tracked = execSync("git diff --name-only HEAD", { encoding: "utf8" });
+  const untracked = execSync("git ls-files --others --exclude-standard", { encoding: "utf8" });
+
+  changed = [...new Set(`${tracked}\n${untracked}`.split("\n").map((s) => s.trim()).filter(Boolean))];
 } catch {
   console.log("check:preflight — no git history to compare; attestation shape OK.");
   process.exit(0);
 }
 
-const required = Object.entries(ROUTE_PATHS)
-  .filter(([, re]) => changed.some((f) => re.test(f)))
-  .map(([route]) => route);
+const required = requiredRoutes(registry, changed);
+
+// A declared route that no registry route defines is a typo, and would otherwise
+// look like diligence: the attestation names more routes, so it reads as safer.
+const known = new Set(registry.routes.map((route) => route.id));
+const unknown = declared.filter((route) => !known.has(route));
+if (unknown.length) {
+  console.error(
+    `check:preflight FAILED — attestation declares routes not in docs/routes.json: ${unknown.join(", ")}`,
+  );
+  process.exit(1);
+}
 
 const missing = required.filter((r) => !declared.includes(r));
 if (missing.length) {

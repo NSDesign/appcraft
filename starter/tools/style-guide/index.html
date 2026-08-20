@@ -1,0 +1,1226 @@
+<title>appcraft — Style Guide</title>
+<style>
+  /* ---------------------------------------------------------------------------
+     Chrome tokens. Deliberately achromatic: the only saturated colour on screen
+     should be the accent the user is choosing, inside the specimen. A tool that
+     imposes its own hue makes every preview a lie.
+     --------------------------------------------------------------------------- */
+  :root {
+    --ink: #16181d;
+    --ink-2: #454b57;
+    --muted: #6e7480;
+    --paper: #fbfbfc;
+    --panel: #ffffff;
+    --rule: #dde0e6;
+    --rule-strong: #c3c8d2;
+    --focus: #16181d;
+
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    --step: 4px;
+    --rail: 340px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8eaef;
+      --ink-2: #a6adba;
+      --muted: #838b98;
+      --paper: #131519;
+      --panel: #191c22;
+      --rule: #2a2e37;
+      --rule-strong: #3d434f;
+      --focus: #e8eaef;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #e8eaef;
+    --ink-2: #a6adba;
+    --muted: #838b98;
+    --paper: #131519;
+    --panel: #191c22;
+    --rule: #2a2e37;
+    --rule-strong: #3d434f;
+    --focus: #e8eaef;
+  }
+
+  :root[data-theme="light"] {
+    --ink: #16181d;
+    --ink-2: #454b57;
+    --muted: #6e7480;
+    --paper: #fbfbfc;
+    --panel: #ffffff;
+    --rule: #dde0e6;
+    --rule-strong: #c3c8d2;
+    --focus: #16181d;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--ui);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  /* ------------------------------------------------------------------ masthead */
+
+  header.masthead {
+    border-bottom: 1px solid var(--rule);
+    padding: calc(var(--step) * 5) calc(var(--step) * 6);
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--step) * 4);
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .wordmark {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .masthead p {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--ink-2);
+    font-size: 14px;
+  }
+
+  /* ---------------------------------------------------------------------- shell */
+
+  .shell {
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+    align-items: start;
+    min-height: calc(100vh - 92px);
+  }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .console { border-right: 0; border-bottom: 1px solid var(--rule); }
+  }
+
+  /* -------------------------------------------------------------------- console */
+
+  .console {
+    border-right: 1px solid var(--rule);
+    padding: calc(var(--step) * 5) calc(var(--step) * 6) calc(var(--step) * 12);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 7);
+  }
+
+  fieldset {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 0;
+    padding: calc(var(--step) * 4) 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 4);
+  }
+
+  legend {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 calc(var(--step) * 2) 0 0;
+  }
+
+  .dial { display: flex; flex-direction: column; gap: calc(var(--step) * 2); }
+
+  .dial > label,
+  .dial > .dial-label {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: calc(var(--step) * 3);
+  }
+
+  .readout {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    font-weight: 400;
+  }
+
+  .hint { font-size: 12px; color: var(--muted); margin: 0; }
+
+  select,
+  input[type="text"],
+  input[type="number"] {
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--rule-strong);
+    border-radius: 4px;
+    padding: calc(var(--step) * 2) calc(var(--step) * 2.5);
+    width: 100%;
+  }
+
+  input[type="range"] { width: 100%; accent-color: var(--ink); }
+
+  .swatch-row { display: flex; gap: calc(var(--step) * 2); align-items: center; }
+  .swatch-row input[type="color"] {
+    inline-size: 44px;
+    block-size: 36px;
+    padding: 0;
+    border: 1px solid var(--rule-strong);
+    border-radius: 4px;
+    background: none;
+    cursor: pointer;
+  }
+
+  .segmented {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    border: 1px solid var(--rule-strong);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .segmented button {
+    font: inherit;
+    font-size: 12px;
+    padding: calc(var(--step) * 2) 0;
+    background: var(--panel);
+    color: var(--ink-2);
+    border: 0;
+    border-left: 1px solid var(--rule);
+    cursor: pointer;
+  }
+
+  .segmented button:first-child { border-left: 0; }
+  .segmented button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+  .default-flag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 1px 7px;
+  }
+  .default-flag[hidden] { display: none; }
+
+  /* ------------------------------------------------------------------- specimen */
+
+  .stage {
+    padding: calc(var(--step) * 5) calc(var(--step) * 6) calc(var(--step) * 12);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 5);
+    min-width: 0;
+  }
+
+  .stage-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--step) * 3);
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .stage-head h2 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+    font-weight: 400;
+  }
+
+  /*
+    The specimen is the appcraft app shape — master-detail, canvas, inspector —
+    because that is what the user is about to build. A generic button gallery would
+    preview the tokens without previewing the decision.
+  */
+  .specimen {
+    border: 1px solid var(--rule-strong);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--sg-bg);
+    color: var(--sg-text);
+    font-family: var(--sg-font-body);
+    font-size: var(--sg-size-body);
+    line-height: var(--sg-leading-body);
+    container-type: inline-size;
+  }
+
+  .sp-bar {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--step) * 3);
+    padding: calc(var(--step) * 3) calc(var(--step) * 4);
+    background: var(--sg-surface);
+    border-bottom: 1px solid var(--sg-border);
+  }
+
+  .sp-title {
+    font-family: var(--sg-font-heading);
+    font-size: var(--sg-size-h4);
+    font-weight: 600;
+    margin: 0;
+    margin-right: auto;
+  }
+
+  .sp-body { display: grid; grid-template-columns: 168px minmax(0, 1fr) 208px; min-height: 340px; }
+  @container (max-width: 720px) { .sp-body { grid-template-columns: minmax(0, 1fr); } }
+
+  .sp-master { border-right: 1px solid var(--sg-border); padding: calc(var(--step) * 2); }
+  .sp-inspector { border-left: 1px solid var(--sg-border); padding: calc(var(--step) * 3); }
+  .sp-master, .sp-inspector { background: var(--sg-surface); }
+
+  .sp-eyebrow {
+    font-size: var(--sg-size-caption);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sg-text-muted);
+    margin: 0 0 calc(var(--step) * 2);
+    padding: 0 calc(var(--step) * 2);
+  }
+
+  .sp-row {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--step) * 2);
+    padding: calc(var(--step) * 2) calc(var(--step) * 2.5);
+    border-radius: var(--sg-radius-inner);
+    cursor: default;
+  }
+  .sp-row[aria-selected="true"] { background: var(--sg-accent); color: var(--sg-on-accent); }
+  .sp-row .chip {
+    inline-size: 10px;
+    block-size: 10px;
+    border-radius: 3px;
+    background: currentColor;
+    opacity: 0.55;
+  }
+
+  .sp-canvas {
+    display: grid;
+    place-items: center;
+    padding: calc(var(--step) * 6);
+    background:
+      repeating-linear-gradient(0deg, var(--sg-grid) 0 1px, transparent 1px 22px),
+      repeating-linear-gradient(90deg, var(--sg-grid) 0 1px, transparent 1px 22px),
+      var(--sg-bg);
+  }
+
+  .sp-shape {
+    inline-size: min(220px, 60%);
+    aspect-ratio: 4 / 3;
+    border-radius: var(--sg-radius-container);
+    background: var(--sg-accent);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 12px 28px -12px var(--sg-accent);
+  }
+
+  .sp-field { display: flex; flex-direction: column; gap: calc(var(--step) * 1.5); margin-bottom: calc(var(--step) * 4); }
+  .sp-field > span { font-size: var(--sg-size-caption); color: var(--sg-text-muted); }
+
+  .sp-input {
+    border: 1px solid var(--sg-border);
+    border-radius: var(--sg-radius-element);
+    padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
+    background: var(--sg-bg);
+    color: var(--sg-text);
+    font-family: inherit;
+    font-size: var(--sg-size-body);
+  }
+
+  .sp-segmented {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    border: 1px solid var(--sg-border);
+    border-radius: var(--sg-radius-element);
+    overflow: hidden;
+    font-size: var(--sg-size-caption);
+  }
+  .sp-segmented span { padding: calc(var(--step) * 1.5) 0; text-align: center; color: var(--sg-text-muted); }
+  .sp-segmented span[data-active] { background: var(--sg-accent); color: var(--sg-on-accent); }
+
+  .sp-btn {
+    border: 0;
+    border-radius: var(--sg-radius-element);
+    padding: calc(var(--step) * 1.5) calc(var(--step) * 3.5);
+    background: var(--sg-accent);
+    color: var(--sg-on-accent);
+    font-family: inherit;
+    font-size: var(--sg-size-body);
+    font-weight: 500;
+    cursor: default;
+  }
+  .sp-btn.ghost {
+    background: transparent;
+    color: var(--sg-text);
+    border: 1px solid var(--sg-border);
+  }
+
+  .sp-scale { padding: calc(var(--step) * 5) calc(var(--step) * 6); border-top: 1px solid var(--sg-border); }
+  .sp-scale > * { margin: 0 0 calc(var(--step) * 2); font-family: var(--sg-font-heading); }
+  .sp-scale p { font-family: var(--sg-font-body); color: var(--sg-text-muted); max-width: 60ch; }
+
+  /* --------------------------------------------------------------------- swatches */
+
+  .swatches { display: flex; flex-wrap: wrap; gap: calc(var(--step) * 2); }
+  .swatches figure { margin: 0; inline-size: 92px; }
+  .swatches .chipbox {
+    block-size: 46px;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+  }
+  .swatches figcaption {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 5px;
+    word-break: break-all;
+  }
+
+  /* ----------------------------------------------------------------------- output */
+
+  .output { display: flex; flex-direction: column; gap: calc(var(--step) * 3); }
+
+  .output-actions { display: flex; flex-wrap: wrap; gap: calc(var(--step) * 2); align-items: center; }
+
+  .action {
+    font: inherit;
+    font-size: 13px;
+    padding: calc(var(--step) * 2) calc(var(--step) * 4);
+    border-radius: 4px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+  }
+  .action.secondary { background: transparent; color: var(--ink); border-color: var(--rule-strong); }
+
+  pre {
+    margin: 0;
+    padding: calc(var(--step) * 4);
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    tab-size: 2;
+  }
+
+  .status {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .caveat {
+    border-left: 2px solid var(--rule-strong);
+    padding-left: calc(var(--step) * 3);
+    color: var(--ink-2);
+    font-size: 13px;
+    max-width: 68ch;
+  }
+  .caveat strong { color: var(--ink); }
+
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+</style>
+
+<header class="masthead">
+  <div>
+    <h1 class="wordmark">appcraft · style guide</h1>
+    <p>
+      Nine decisions, each with a real default. Adjust them until the specimen looks
+      like the app you are about to build, then hand the emitted theme to your agent.
+    </p>
+  </div>
+  <button class="action secondary" type="button" id="page-theme">Dark chrome</button>
+</header>
+
+<div class="shell">
+  <form class="console" id="console">
+    <fieldset>
+      <legend>Foundation</legend>
+
+      <div class="dial">
+        <label for="base-theme">
+          Base theme
+          <span class="default-flag" id="flag-baseTheme">default</span>
+        </label>
+        <select id="base-theme" name="baseTheme">
+          <option value="neutral">neutral — start here</option>
+          <option value="butter">butter</option>
+          <option value="chocolate">chocolate</option>
+          <option value="matcha">matcha</option>
+          <option value="stone">stone</option>
+          <option value="gothic">gothic — dark only</option>
+          <option value="y2k">y2k</option>
+          <option value="none">none — build from tokens</option>
+        </select>
+        <p class="hint">Everything below is a delta from this theme.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Colour</legend>
+
+      <div class="dial">
+        <label for="accent">
+          Accent
+          <span class="readout" id="accent-readout">#5B6CFF</span>
+        </label>
+        <div class="swatch-row">
+          <input type="color" id="accent" name="accent" value="#5b6cff" />
+          <input type="text" id="accent-hex" value="#5B6CFF" spellcheck="false"
+                 aria-label="Accent colour, hexadecimal" />
+        </div>
+        <p class="hint">Astryx derives the whole palette from this one value.</p>
+      </div>
+
+      <div class="dial">
+        <span class="dial-label" id="neutral-label">Neutral temperature</span>
+        <div class="segmented" role="group" aria-labelledby="neutral-label" data-field="neutralStyle">
+          <button type="button" value="neutral" aria-pressed="true">neutral</button>
+          <button type="button" value="warm" aria-pressed="false">warm</button>
+          <button type="button" value="cool" aria-pressed="false">cool</button>
+        </div>
+      </div>
+
+      <div class="dial">
+        <span class="dial-label" id="contrast-label">Contrast</span>
+        <div class="segmented" role="group" aria-labelledby="contrast-label" data-field="contrast">
+          <button type="button" value="standard" aria-pressed="true">standard</button>
+          <button type="button" value="high" aria-pressed="false">high</button>
+        </div>
+        <p class="hint" id="contrast-note"></p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Typography</legend>
+
+      <div class="dial">
+        <label for="base-font">
+          Base typeface
+          <span class="default-flag" id="flag-baseFont">default</span>
+        </label>
+        <select id="base-font" data-font-select="baseFont"></select>
+        <input type="text" id="base-font-custom" data-font-custom="baseFont" spellcheck="false"
+               placeholder="Family name" aria-label="Base typeface, custom family name" hidden />
+        <p class="hint">Heading and body inherit this unless you set them below.</p>
+      </div>
+
+      <div class="dial">
+        <label for="heading-font">
+          Heading typeface
+          <span class="default-flag" id="flag-headingFont">inherits</span>
+        </label>
+        <select id="heading-font" data-font-select="headingFont"></select>
+        <input type="text" id="heading-font-custom" data-font-custom="headingFont" spellcheck="false"
+               placeholder="Family name" aria-label="Heading typeface, custom family name" hidden />
+      </div>
+
+      <div class="dial">
+        <label for="body-font">
+          Body typeface
+          <span class="default-flag" id="flag-bodyFont">inherits</span>
+        </label>
+        <select id="body-font" data-font-select="bodyFont"></select>
+        <input type="text" id="body-font-custom" data-font-custom="bodyFont" spellcheck="false"
+               placeholder="Family name" aria-label="Body typeface, custom family name" hidden />
+      </div>
+
+      <div class="dial">
+        <label for="base-size">
+          Base size
+          <span class="readout" id="base-size-readout">16 px</span>
+        </label>
+        <input type="range" id="base-size" name="baseSize" min="13" max="20" step="1" value="16" />
+      </div>
+
+      <div class="dial">
+        <label for="scale-ratio">
+          Scale ratio
+          <span class="readout" id="scale-ratio-readout">1.20</span>
+        </label>
+        <input type="range" id="scale-ratio" name="scaleRatio" min="1.1" max="1.5" step="0.025" value="1.2" />
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Shape</legend>
+
+      <div class="dial">
+        <label for="radius-base">
+          Corner radius
+          <span class="readout" id="radius-readout">4 px</span>
+        </label>
+        <input type="range" id="radius-base" name="radiusBase" min="0" max="16" step="1" value="4" />
+        <p class="hint">Motion is not asked here — the base theme's durations are coherent with its palette.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Reset</legend>
+      <button class="action secondary" type="button" id="reset">Restore every default</button>
+    </fieldset>
+  </form>
+
+  <main class="stage">
+    <div class="stage-head">
+      <h2>Specimen — the archetypes you will actually compose</h2>
+      <div class="segmented" role="group" aria-label="Specimen colour scheme" data-field="preview" style="max-width: 180px;">
+        <button type="button" value="light" aria-pressed="true">light</button>
+        <button type="button" value="dark" aria-pressed="false">dark</button>
+      </div>
+    </div>
+
+    <section class="specimen" id="specimen" aria-label="Theme specimen">
+      <div class="sp-bar">
+        <p class="sp-title">Untitled document</p>
+        <button class="sp-btn ghost" type="button" tabindex="-1">Undo</button>
+        <button class="sp-btn" type="button" tabindex="-1">Export</button>
+      </div>
+
+      <div class="sp-body">
+        <div class="sp-master">
+          <p class="sp-eyebrow">Layers</p>
+          <div class="sp-row" aria-selected="true"><span class="chip"></span> Background</div>
+          <div class="sp-row"><span class="chip"></span> Outline</div>
+          <div class="sp-row"><span class="chip"></span> Highlight</div>
+          <div class="sp-row"><span class="chip"></span> Caption</div>
+        </div>
+
+        <div class="sp-canvas"><div class="sp-shape"></div></div>
+
+        <div class="sp-inspector">
+          <p class="sp-eyebrow">Inspector</p>
+
+          <div class="sp-field">
+            <span>Value mode</span>
+            <div class="sp-segmented" aria-hidden="true">
+              <span data-active>fixed</span><span>range</span><span>step</span>
+            </div>
+          </div>
+
+          <div class="sp-field">
+            <span>Amount</span>
+            <div class="sp-input">42</div>
+          </div>
+
+          <div class="sp-field">
+            <span>Label</span>
+            <div class="sp-input">Primary shape</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-scale">
+        <h3 style="font-size: var(--sg-size-h2);">A heading at the second step</h3>
+        <h4 style="font-size: var(--sg-size-h4);">And a subheading beneath it</h4>
+        <p>
+          Body copy at the base size, set in the face you chose. Read a couple of lines
+          to judge the rhythm — a scale that looks right in isolation often reads too
+          tight once real sentences fill the measure.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <div class="stage-head"><h2>Derived palette</h2></div>
+      <div class="swatches" id="swatches"></div>
+    </section>
+
+    <section class="output">
+      <div class="stage-head">
+        <h2>Emitted theme</h2>
+        <span class="status" id="status" role="status" aria-live="polite"></span>
+      </div>
+
+      <div class="output-actions">
+        <button class="action" type="button" id="copy-ts">Copy defineTheme</button>
+        <button class="action secondary" type="button" id="copy-json">Copy JSON</button>
+        <button class="action secondary" type="button" id="download">Download style-guide.json</button>
+      </div>
+
+      <pre id="emitted"><code></code></pre>
+
+      <p class="caveat">
+        <strong>This page collects intent; Astryx derives the truth.</strong> The palette
+        above is an OKLCH approximation so you can judge a choice quickly. The
+        authoritative values come from <code>astryx theme build</code>, which uses HCT.
+        Expect close, not identical. The specimen also renders a typeface only if it is
+        installed locally — a name you cannot see here will still reach your agent.
+      </p>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+  "use strict";
+
+  /* ---------------------------------------------------------------- colour maths
+     sRGB → OKLab → OKLCH and back. Enough to derive a plausible palette from one
+     accent without pretending to reproduce Astryx's HCT pipeline.
+  */
+  const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
+
+  function hexToRgb(hex) {
+    const clean = hex.replace("#", "").trim();
+    const full = clean.length === 3 ? clean.replace(/./g, (c) => c + c) : clean;
+    if (!/^[0-9a-f]{6}$/i.test(full)) return undefined;
+    return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  }
+
+  const toLinear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const toGamma = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055);
+
+  function rgbToOklch([r, g, b]) {
+    const lr = toLinear(r), lg = toLinear(g), lb = toLinear(b);
+    const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+    const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+    const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+    const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+    const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+    const B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+    const C = Math.hypot(A, B);
+    let H = (Math.atan2(B, A) * 180) / Math.PI;
+    if (H < 0) H += 360;
+    return { C, H, L };
+  }
+
+  function oklchToHex({ C, H, L }) {
+    const h = (H * Math.PI) / 180;
+    const A = Math.cos(h) * C;
+    const B = Math.sin(h) * C;
+    const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+    const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+    const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+    const channels = [
+      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+    ].map((v) => Math.round(clamp(toGamma(clamp(v, 0, 1)), 0, 1) * 255));
+    return `#${channels.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  /* ------------------------------------------------------------------ derivation */
+
+  const NEUTRAL_HUE = { cool: 250, warm: 62 };
+
+  function derive(state, scheme) {
+    const accentRgb = hexToRgb(state.accent) ?? hexToRgb("#5b6cff");
+    const accent = rgbToOklch(accentRgb);
+    const dark = scheme === "dark";
+    const high = state.contrast === "high";
+
+    const neutralHue = state.neutralStyle === "neutral" ? accent.H : NEUTRAL_HUE[state.neutralStyle];
+    const neutralChroma = state.neutralStyle === "neutral" ? 0.006 : 0.013;
+    const neutral = (L) => oklchToHex({ C: neutralChroma, H: neutralHue, L });
+
+    const bgL = dark ? (high ? 0.14 : 0.17) : high ? 1.0 : 0.985;
+    const surfaceL = dark ? bgL + 0.04 : bgL - 0.025;
+    const textL = dark ? (high ? 0.98 : 0.93) : high ? 0.16 : 0.24;
+    const mutedL = dark ? textL - 0.24 : textL + 0.3;
+    const borderL = dark ? bgL + 0.13 : bgL - 0.11;
+
+    // Keep the accent legible on its own ground rather than trusting the raw value.
+    const accentL = clamp(dark ? Math.max(accent.L, 0.62) : Math.min(accent.L, 0.68), 0.3, 0.86);
+    const accentHex = oklchToHex({ C: accent.C, H: accent.H, L: accentL });
+    const onAccent = accentL > 0.62 ? oklchToHex({ C: 0.01, H: accent.H, L: 0.17 }) : "#ffffff";
+
+    return {
+      "color-accent": accentHex,
+      "color-background": neutral(bgL),
+      "color-background-surface": neutral(surfaceL),
+      "color-border": neutral(borderL),
+      "color-grid": neutral(dark ? bgL + 0.055 : bgL - 0.045),
+      "color-on-accent": onAccent,
+      "color-text-primary": neutral(textL),
+      "color-text-secondary": neutral(clamp(mutedL, 0, 1)),
+    };
+  }
+
+  function typeScale(state) {
+    const base = state.baseSize;
+    const r = state.scaleRatio;
+    const step = (n) => `${Math.round(base * r ** n * 100) / 100}px`;
+    return {
+      "size-body": `${base}px`,
+      "size-caption": `${Math.round((base / r) * 100) / 100}px`,
+      "size-h1": step(4),
+      "size-h2": step(3),
+      "size-h3": step(2),
+      "size-h4": step(1),
+    };
+  }
+
+  function radii(state) {
+    const b = state.radiusBase;
+    return {
+      "radius-container": `${b * 2}px`,
+      "radius-element": `${b}px`,
+      "radius-inner": `${Math.max(0, b - 2)}px`,
+      "radius-page": `${b * 3}px`,
+    };
+  }
+
+  /* ------------------------------------------------------------------------ state */
+
+  /*
+    A curated list rather than a free-text box alone. Naming a family from memory is
+    where typography choices go wrong — a misremembered name silently falls back and
+    the preview lies. "Custom…" is still there for anything not listed.
+
+    Grouped by what will actually render: system stacks always resolve, common desktop
+    faces usually do, and web fonts render only where installed — which the hint says
+    plainly rather than letting a silent fallback pass for a choice.
+  */
+  const FONT_CATALOGUE = [
+    {
+      label: "System",
+      options: [
+        ["system-ui", "System UI"],
+        ["ui-serif", "System serif"],
+        ["ui-monospace", "System monospace"],
+        ["ui-rounded", "System rounded"],
+      ],
+    },
+    {
+      label: "Commonly installed",
+      options: [
+        ["Helvetica Neue", "Helvetica Neue"],
+        ["Arial", "Arial"],
+        ["Verdana", "Verdana"],
+        ["Trebuchet MS", "Trebuchet MS"],
+        ["Georgia", "Georgia"],
+        ["Palatino", "Palatino"],
+        ["Times New Roman", "Times New Roman"],
+        ["Courier New", "Courier New"],
+      ],
+    },
+    {
+      label: "Web fonts — render only where installed or loaded",
+      options: [
+        ["Inter", "Inter"],
+        ["Albert Sans", "Albert Sans"],
+        ["Space Grotesk", "Space Grotesk"],
+        ["IBM Plex Sans", "IBM Plex Sans"],
+        ["Fraunces", "Fraunces"],
+        ["Source Serif 4", "Source Serif 4"],
+        ["JetBrains Mono", "JetBrains Mono"],
+      ],
+    },
+  ];
+
+  /** Sentinel values. Empty means "inherit"; CUSTOM reveals the text field. */
+  const INHERIT = "";
+  const CUSTOM = "__custom__";
+
+  const FONT_FIELDS = ["baseFont", "headingFont", "bodyFont"];
+
+  const INHERIT_LABEL = {
+    baseFont: "Inherit from base theme",
+    bodyFont: "Inherit from base typeface",
+    headingFont: "Inherit from base typeface",
+  };
+
+  const DEFAULTS = Object.freeze({
+    accent: "#5B6CFF",
+    baseFont: "",
+    baseSize: 16,
+    baseTheme: "neutral",
+    bodyFont: "",
+    contrast: "standard",
+    headingFont: "",
+    neutralStyle: "neutral",
+    radiusBase: 4,
+    scaleRatio: 1.2,
+  });
+
+  const state = { ...DEFAULTS };
+  let previewScheme = "light";
+
+  const $ = (id) => document.getElementById(id);
+  const specimen = $("specimen");
+
+  /**
+   * Base fills heading and body; either may override it. Empty means inherit, so a
+   * user who sets only the base gets it everywhere without saying so three times.
+   */
+  function resolvedFamilies() {
+    const base = state.baseFont.trim();
+    return {
+      body: (state.bodyFont.trim() || base) || "",
+      heading: (state.headingFont.trim() || base) || "",
+    };
+  }
+
+  const GENERIC = new Set(["system-ui", "ui-serif", "ui-monospace", "ui-rounded"]);
+
+  function fontStack(family, fallback) {
+    const trimmed = family.trim();
+    if (!trimmed) return fallback;
+    return GENERIC.has(trimmed) ? `${trimmed}, ${fallback}` : `"${trimmed}", ${fallback}`;
+  }
+
+  function render() {
+    const tokens = derive(state, previewScheme);
+    const type = typeScale(state);
+    const shape = radii(state);
+
+    const families = resolvedFamilies();
+    const body = fontStack(families.body, "system-ui, sans-serif");
+    const heading = fontStack(families.heading, "system-ui, sans-serif");
+
+    const vars = {
+      "--sg-accent": tokens["color-accent"],
+      "--sg-bg": tokens["color-background"],
+      "--sg-border": tokens["color-border"],
+      "--sg-font-body": body,
+      "--sg-font-heading": heading,
+      "--sg-grid": tokens["color-grid"],
+      "--sg-leading-body": String(Math.round((1.65 - (state.scaleRatio - 1.1) * 0.5) * 100) / 100),
+      "--sg-on-accent": tokens["color-on-accent"],
+      "--sg-radius-container": shape["radius-container"],
+      "--sg-radius-element": shape["radius-element"],
+      "--sg-radius-inner": shape["radius-inner"],
+      "--sg-size-body": type["size-body"],
+      "--sg-size-caption": type["size-caption"],
+      "--sg-size-h2": type["size-h2"],
+      "--sg-size-h4": type["size-h4"],
+      "--sg-surface": tokens["color-background-surface"],
+      "--sg-text": tokens["color-text-primary"],
+      "--sg-text-muted": tokens["color-text-secondary"],
+    };
+
+    for (const [name, value] of Object.entries(vars)) specimen.style.setProperty(name, value);
+
+    renderSwatches(tokens);
+    renderReadouts();
+    for (const field of FONT_FIELDS) syncFontControls(field);
+    renderEmitted();
+  }
+
+  function renderSwatches(tokens) {
+    $("swatches").innerHTML = Object.entries(tokens)
+      .filter(([name]) => name !== "color-grid")
+      .map(
+        ([name, value]) =>
+          `<figure><div class="chipbox" style="background:${value}"></div>` +
+          `<figcaption>--${name}<br />${value}</figcaption></figure>`,
+      )
+      .join("");
+  }
+
+  function renderReadouts() {
+    $("accent-readout").textContent = state.accent.toUpperCase();
+    $("base-size-readout").textContent = `${state.baseSize} px`;
+    $("scale-ratio-readout").textContent = state.scaleRatio.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+    $("radius-readout").textContent = `${state.radiusBase} px`;
+    $("contrast-note").textContent =
+      state.contrast === "high"
+        ? "Widens the text-to-background gap. Choose this when the app is used in bright rooms."
+        : "";
+
+    for (const key of ["baseTheme", "baseFont", "headingFont", "bodyFont"]) {
+      const flag = $(`flag-${key}`);
+      if (flag) flag.hidden = state[key] !== DEFAULTS[key];
+    }
+  }
+
+  /* The two artefacts the style-guide route asks for, kept side by side so the
+     recorded answers and the compiled theme cannot disagree. */
+  function buildTheme() {
+    const theme = { name: "app-theme" };
+    if (state.baseTheme !== "none") theme.extends = `${state.baseTheme}Theme`;
+
+    theme.color = { accent: state.accent.toUpperCase() };
+    if (state.neutralStyle !== "neutral") theme.color.neutralStyle = state.neutralStyle;
+    if (state.contrast !== "standard") theme.color.contrast = state.contrast;
+
+    const typography = {};
+    if (state.baseSize !== DEFAULTS.baseSize || state.scaleRatio !== DEFAULTS.scaleRatio) {
+      typography.scale = { base: state.baseSize, ratio: state.scaleRatio };
+    }
+    // Astryx has no "base" family — that is a convenience in this tool. Emit the
+    // resolved values so the theme states what it means rather than relying on a
+    // fallback chain the reader has to reconstruct.
+    const families = resolvedFamilies();
+    if (families.body) typography.body = { family: families.body };
+    if (families.heading) typography.heading = { family: families.heading };
+    if (Object.keys(typography).length) theme.typography = typography;
+
+    if (state.radiusBase !== DEFAULTS.radiusBase) theme.radius = { base: state.radiusBase, multiplier: 1 };
+
+    return theme;
+  }
+
+  function toSource(value, indent = 2) {
+    const pad = " ".repeat(indent);
+    if (Array.isArray(value)) return `[${value.map((v) => toSource(v, indent)).join(", ")}]`;
+    if (value && typeof value === "object") {
+      const inner = Object.entries(value)
+        .map(([key, entry]) => `${pad}  ${key}: ${toSource(entry, indent + 2)}`)
+        .join(",\n");
+      return `{\n${inner},\n${pad}}`;
+    }
+    if (typeof value === "string") return value.endsWith("Theme") ? value : JSON.stringify(value);
+    return String(value);
+  }
+
+  function answersRecord() {
+    // Every property, including the ones left at default — a later reader must be
+    // able to tell a deliberate default from an unexamined one.
+    return Object.fromEntries(
+      Object.keys(DEFAULTS)
+        .sort()
+        .map((key) => [
+          key,
+          { chosen: state[key] === DEFAULTS[key] ? "default" : "explicit", value: state[key] },
+        ]),
+    );
+  }
+
+  function emittedPayload() {
+    return {
+      answers: answersRecord(),
+      astryxVersionNote: "Record the @astryxdesign/core version this was chosen against.",
+      derived: { dark: derive(state, "dark"), light: derive(state, "light") },
+      radius: radii(state),
+      theme: buildTheme(),
+      typeScale: typeScale(state),
+    };
+  }
+
+  function renderEmitted() {
+    const theme = buildTheme();
+    const imports = state.baseTheme === "none"
+      ? `import {defineTheme} from '@astryxdesign/core/theme';`
+      : `import {defineTheme} from '@astryxdesign/core/theme';\n` +
+        `import {${state.baseTheme}Theme} from '@astryxdesign/theme-${state.baseTheme}';`;
+
+    $("emitted").firstElementChild.textContent =
+      `${imports}\n\nexport const appTheme = defineTheme(${toSource(theme)});\n`;
+  }
+
+  /* ------------------------------------------------------------------- interaction */
+
+  function bindSegmented(group, onPick) {
+    group.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      for (const sibling of group.querySelectorAll("button")) {
+        sibling.setAttribute("aria-pressed", String(sibling === button));
+      }
+      onPick(button.value);
+    });
+  }
+
+  for (const group of document.querySelectorAll("[data-field]")) {
+    const field = group.dataset.field;
+    bindSegmented(group, (value) => {
+      if (field === "preview") previewScheme = value;
+      else state[field] = value;
+      render();
+    });
+  }
+
+  $("accent").addEventListener("input", (event) => {
+    state.accent = event.target.value;
+    $("accent-hex").value = event.target.value.toUpperCase();
+    render();
+  });
+
+  $("accent-hex").addEventListener("input", (event) => {
+    const value = event.target.value.trim();
+    if (!hexToRgb(value)) return;
+    state.accent = value.startsWith("#") ? value : `#${value}`;
+    $("accent").value = state.accent.toLowerCase();
+    render();
+  });
+
+  const NUMERIC = { "base-size": "baseSize", "radius-base": "radiusBase", "scale-ratio": "scaleRatio" };
+  for (const [id, key] of Object.entries(NUMERIC)) {
+    $(id).addEventListener("input", (event) => {
+      state[key] = Number(event.target.value);
+      render();
+    });
+  }
+
+  $("base-theme").addEventListener("input", (event) => {
+    state.baseTheme = event.target.value;
+    render();
+  });
+
+  function buildFontSelect(select, field) {
+    const groups = FONT_CATALOGUE.map(
+      (group) =>
+        `<optgroup label="${group.label}">` +
+        group.options
+          .map(([value, label]) => `<option value="${value}">${label}</option>`)
+          .join("") +
+        `</optgroup>`,
+    ).join("");
+
+    select.innerHTML =
+      `<option value="">${INHERIT_LABEL[field]}</option>` +
+      groups +
+      `<option value="${CUSTOM}">Custom…</option>`;
+  }
+
+  /** Reflect state into the select/custom pair without firing another render. */
+  function syncFontControls(field) {
+    const select = document.querySelector(`[data-font-select="${field}"]`);
+    const custom = document.querySelector(`[data-font-custom="${field}"]`);
+    const value = state[field];
+    const listed = FONT_CATALOGUE.some((group) =>
+      group.options.some(([option]) => option === value),
+    );
+
+    if (value === INHERIT) {
+      select.value = INHERIT;
+      custom.hidden = true;
+      custom.value = "";
+    } else if (listed) {
+      select.value = value;
+      custom.hidden = true;
+      custom.value = "";
+    } else {
+      select.value = CUSTOM;
+      custom.hidden = false;
+      if (custom.value !== value) custom.value = value;
+    }
+  }
+
+  for (const field of FONT_FIELDS) {
+    const select = document.querySelector(`[data-font-select="${field}"]`);
+    const custom = document.querySelector(`[data-font-custom="${field}"]`);
+
+    buildFontSelect(select, field);
+
+    select.addEventListener("change", (event) => {
+      const value = event.target.value;
+      if (value === CUSTOM) {
+        // Keep whatever was typed before, so switching away and back is not a reset.
+        state[field] = custom.value.trim() || " ";
+        custom.hidden = false;
+        custom.focus();
+      } else {
+        state[field] = value;
+        custom.hidden = true;
+      }
+      render();
+    });
+
+    custom.addEventListener("input", (event) => {
+      state[field] = event.target.value;
+      render();
+    });
+  }
+
+  function announce(message) {
+    const status = $("status");
+    status.textContent = message;
+    setTimeout(() => {
+      if (status.textContent === message) status.textContent = "";
+    }, 2400);
+  }
+
+  async function copy(text, label) {
+    try {
+      await navigator.clipboard.writeText(text);
+      announce(`${label} copied`);
+    } catch {
+      announce("Clipboard unavailable — select the text and copy manually");
+    }
+  }
+
+  $("copy-ts").addEventListener("click", () =>
+    copy($("emitted").textContent, "defineTheme"),
+  );
+  $("copy-json").addEventListener("click", () =>
+    copy(JSON.stringify(emittedPayload(), null, 2), "JSON"),
+  );
+
+  $("download").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(emittedPayload(), null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = Object.assign(document.createElement("a"), { download: "style-guide.json", href: url });
+    anchor.click();
+    URL.revokeObjectURL(url);
+    announce("style-guide.json downloaded");
+  });
+
+  $("reset").addEventListener("click", () => {
+    Object.assign(state, DEFAULTS);
+    $("accent").value = DEFAULTS.accent.toLowerCase();
+    $("accent-hex").value = DEFAULTS.accent;
+    $("base-theme").value = DEFAULTS.baseTheme;
+    for (const field of FONT_FIELDS) {
+      state[field] = DEFAULTS[field];
+      const custom = document.querySelector(`[data-font-custom="${field}"]`);
+      custom.value = "";
+      custom.hidden = true;
+    }
+    $("base-size").value = String(DEFAULTS.baseSize);
+    $("scale-ratio").value = String(DEFAULTS.scaleRatio);
+    $("radius-base").value = String(DEFAULTS.radiusBase);
+    for (const group of document.querySelectorAll("[data-field]")) {
+      const field = group.dataset.field;
+      if (field === "preview") continue;
+      for (const button of group.querySelectorAll("button")) {
+        button.setAttribute("aria-pressed", String(button.value === DEFAULTS[field]));
+      }
+    }
+    render();
+    announce("Defaults restored");
+  });
+
+  const pageTheme = $("page-theme");
+  pageTheme.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    pageTheme.textContent = next === "dark" ? "Light chrome" : "Dark chrome";
+  });
+
+  render();
+</script>
